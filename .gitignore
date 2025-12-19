@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Font files (using woff2 only)
+src/assets/fonts/*.ttf
