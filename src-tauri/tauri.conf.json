@@ -34,7 +34,7 @@
   },
   "plugins": {
     "sql": {
-      "preload": ["sqlite:mydatabase2.db"]
+      "preload": ["sqlite:standclock.db"]
     }
   }
 }

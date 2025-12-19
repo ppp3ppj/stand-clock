@@ -23,7 +23,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_sql::Builder::default()
-                .add_migrations("sqlite:mydatabase2.db", migrations)
+                .add_migrations("sqlite:standclock.db", migrations)
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())

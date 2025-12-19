@@ -11,7 +11,7 @@ function App() {
 
   onMount(async () => {
         console.log("hi");
-        const db = await Database.load('sqlite:mydatabase2.db');
+        const db = await Database.load('sqlite:standclock.db');
         console.log(db);
   });
 
