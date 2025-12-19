@@ -1,4 +1,4 @@
-import Database from '@tauri-apps/plugin-sql';
+import { IUnitOfWork } from './IUnitOfWork';
 
 export interface TimerSettings {
   workDuration: number;
@@ -36,21 +36,14 @@ export interface ITimerSettingsRepository {
 
 /**
  * SQLite implementation of timer settings repository
+ * Works with Unit of Work pattern for transaction management
  */
 export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
-  private db: Database | null = null;
-  private readonly dbPath = 'sqlite:standclock.db';
-
-  private async getDatabase(): Promise<Database> {
-    if (!this.db) {
-      this.db = await Database.load(this.dbPath);
-    }
-    return this.db;
-  }
+  constructor(private unitOfWork: IUnitOfWork) {}
 
   async load(): Promise<TimerSettings> {
     try {
-      const db = await this.getDatabase();
+      const db = await this.unitOfWork.getDatabase();
       const result = await db.select<Array<{
         work_duration: number;
         short_break_duration: number;
@@ -77,7 +70,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
 
   async save(settings: TimerSettings): Promise<void> {
     try {
-      const db = await this.getDatabase();
+      const db = await this.unitOfWork.getDatabase();
       await db.execute(
         `UPDATE timer_settings
          SET work_duration = $1,
@@ -139,15 +132,4 @@ export class LocalStorageTimerSettingsRepository implements ITimerSettingsReposi
     await this.save(DEFAULT_TIMER_SETTINGS);
     console.log("[LocalStorageTimerSettingsRepository] Settings reset to defaults");
   }
-}
-
-/**
- * Factory function to create the appropriate repository based on environment
- */
-export function createTimerSettingsRepository(): ITimerSettingsRepository {
-  // Use SQLite for Tauri app
-  return new SqliteTimerSettingsRepository();
-
-  // Alternative: Use localStorage for web builds
-  // return new LocalStorageTimerSettingsRepository();
 }

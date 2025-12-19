@@ -1,10 +1,7 @@
-import { createContext, useContext, createSignal, onMount, ParentComponent } from "solid-js";
-import {
-  ITimerSettingsRepository,
-  TimerSettings,
-  DEFAULT_TIMER_SETTINGS,
-  createTimerSettingsRepository
-} from "../repositories/TimerSettingsRepository";
+import { createContext, useContext, createSignal, onMount, onCleanup, ParentComponent } from "solid-js";
+import { IUnitOfWork } from "../repositories/IUnitOfWork";
+import { createUnitOfWork } from "../repositories/SqliteUnitOfWork";
+import { TimerSettings, DEFAULT_TIMER_SETTINGS } from "../repositories/TimerSettingsRepository";
 
 interface TimerSettingsContextValue {
   settings: () => TimerSettings;
@@ -16,15 +13,16 @@ interface TimerSettingsContextValue {
 const TimerSettingsContext = createContext<TimerSettingsContextValue>();
 
 interface TimerSettingsProviderProps {
-  repository?: ITimerSettingsRepository;
+  unitOfWork?: IUnitOfWork;
 }
 
 /**
- * Provider for timer settings with dependency injection support
+ * Provider for timer settings with Unit of Work pattern
+ * Supports dependency injection for testing
  */
 export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> = (props) => {
-  // Use injected repository or create default one
-  const repository = props.repository ?? createTimerSettingsRepository();
+  // Use injected Unit of Work or create default one
+  const unitOfWork = props.unitOfWork ?? createUnitOfWork();
 
   const [settings, setSettings] = createSignal<TimerSettings>(DEFAULT_TIMER_SETTINGS);
   const [isLoading, setIsLoading] = createSignal(true);
@@ -32,7 +30,7 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
   // Load settings from repository on mount
   onMount(async () => {
     try {
-      const loadedSettings = await repository.load();
+      const loadedSettings = await unitOfWork.timerSettings.load();
       setSettings(loadedSettings);
     } catch (error) {
       console.error("[TimerSettingsContext] Failed to load settings:", error);
@@ -42,11 +40,16 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
     }
   });
 
+  // Cleanup on unmount
+  onCleanup(async () => {
+    await unitOfWork.dispose();
+  });
+
   const updateSettings = async (newSettings: Partial<TimerSettings>) => {
     const updated = { ...settings(), ...newSettings };
 
     try {
-      await repository.save(updated);
+      await unitOfWork.timerSettings.save(updated);
       setSettings(updated);
     } catch (error) {
       console.error("[TimerSettingsContext] Failed to save settings:", error);
@@ -56,7 +59,7 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
 
   const resetToDefaults = async () => {
     try {
-      await repository.reset();
+      await unitOfWork.timerSettings.reset();
       setSettings(DEFAULT_TIMER_SETTINGS);
     } catch (error) {
       console.error("[TimerSettingsContext] Failed to reset settings:", error);
