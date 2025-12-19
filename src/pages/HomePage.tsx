@@ -14,6 +14,43 @@ function HomePage() {
 
   let intervalId: number | null = null;
 
+  // Play notification sound
+  const playNotificationSound = () => {
+    if (settings().soundEnabled) {
+      // Create an audio context and generate a pleasant notification sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // Pleasant notification tone (C5 -> E5 -> G5)
+      const playTone = (frequency: number, startTime: number, duration: number) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc.frequency.value = frequency;
+        osc.type = 'sine';
+        
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = audioContext.currentTime;
+      playTone(523.25, now, 0.2); // C5
+      playTone(659.25, now + 0.2, 0.2); // E5
+      playTone(783.99, now + 0.4, 0.4); // G5
+    }
+  };
+
   // Initialize timer with current mode duration
   const initializeTimer = (selectedMode: TimerMode) => {
     const durations = {
@@ -56,6 +93,9 @@ function HomePage() {
               intervalId = null;
             }
             setIsRunning(false);
+
+            // Play notification sound
+            playNotificationSound();
 
             // Handle session completion
             if (mode() === "pomodoro") {

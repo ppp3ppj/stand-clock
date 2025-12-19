@@ -5,6 +5,7 @@ export interface TimerSettings {
   shortBreakDuration: number;
   longBreakDuration: number;
   sessionsBeforeLongBreak: number;
+  soundEnabled: boolean;
 }
 
 export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
@@ -12,6 +13,7 @@ export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   shortBreakDuration: 5,
   longBreakDuration: 15,
   sessionsBeforeLongBreak: 4,
+  soundEnabled: true,
 };
 
 /**
@@ -49,6 +51,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
         short_break_duration: number;
         long_break_duration: number;
         sessions_before_long_break: number;
+        sound_enabled?: number;
       }>>("SELECT * FROM timer_settings WHERE id = 1");
 
       if (result.length > 0) {
@@ -58,6 +61,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           shortBreakDuration: row.short_break_duration,
           longBreakDuration: row.long_break_duration,
           sessionsBeforeLongBreak: row.sessions_before_long_break,
+          soundEnabled: row.sound_enabled !== undefined ? Boolean(row.sound_enabled) : true,
         };
       }
 
@@ -77,6 +81,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
              short_break_duration = $2,
              long_break_duration = $3,
              sessions_before_long_break = $4,
+             sound_enabled = $5,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = 1`,
         [
@@ -84,6 +89,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           settings.shortBreakDuration,
           settings.longBreakDuration,
           settings.sessionsBeforeLongBreak,
+          settings.soundEnabled ? 1 : 0,
         ]
       );
       console.log("[SqliteTimerSettingsRepository] Settings saved successfully");

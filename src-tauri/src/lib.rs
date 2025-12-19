@@ -25,6 +25,12 @@ pub fn run() {
             INSERT OR IGNORE INTO timer_settings (id, work_duration, short_break_duration, long_break_duration, sessions_before_long_break)
             VALUES (1, 25, 5, 15, 4);",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "add sound_enabled to timer_settings",
+            sql: "ALTER TABLE timer_settings ADD COLUMN sound_enabled INTEGER NOT NULL DEFAULT 1;",
+            kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()
