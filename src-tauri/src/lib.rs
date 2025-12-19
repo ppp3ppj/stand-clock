@@ -13,12 +13,17 @@ pub fn run() {
         // Define your migrations here
         Migration {
             version: 1,
-            description: "create users table",
-            sql: "CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT
-            )",
+            description: "create timer_settings table",
+            sql: "CREATE TABLE IF NOT EXISTS timer_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                work_duration INTEGER NOT NULL DEFAULT 25,
+                short_break_duration INTEGER NOT NULL DEFAULT 5,
+                long_break_duration INTEGER NOT NULL DEFAULT 15,
+                sessions_before_long_break INTEGER NOT NULL DEFAULT 4,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT OR IGNORE INTO timer_settings (id, work_duration, short_break_duration, long_break_duration, sessions_before_long_break)
+            VALUES (1, 25, 5, 15, 4);",
             kind: MigrationKind::Up,
         }
     ];
