@@ -2,6 +2,7 @@ import { Route, A } from "@solidjs/router";
 import { ParentComponent } from "solid-js";
 import HomePage from "./pages/HomePage";
 import SettingsPage from "./pages/SettingsPage";
+import TimerSettingsPage from "./pages/TimerSettingsPage";
 import "./App.css";
 
 const Layout: ParentComponent = (props) => {
@@ -11,9 +12,12 @@ const Layout: ParentComponent = (props) => {
         <div class="flex-1">
           <A href="/" class="btn btn-ghost text-xl">Stand Clock</A>
         </div>
-        <div class="flex-none">
+        <div class="flex-none gap-2">
+          <A href="/timer-settings" class="btn btn-ghost">
+            Timer
+          </A>
           <A href="/settings" class="btn btn-ghost">
-            Settings
+            Theme
           </A>
         </div>
       </nav>
@@ -26,6 +30,7 @@ function App() {
   return (
     <Route path="/" component={Layout}>
       <Route path="/" component={HomePage} />
+      <Route path="/timer-settings" component={TimerSettingsPage} />
       <Route path="/settings" component={SettingsPage} />
     </Route>
   );
