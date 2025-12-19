@@ -118,37 +118,34 @@ function HomePage() {
   };
 
   return (
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
-      <div class="w-full max-w-md">
-        <div class="flex flex-col items-center text-center gap-4">
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="card bg-base-200/50 backdrop-blur-sm shadow-2xl w-full max-w-lg">
+        <div class="card-body p-8 gap-6">
           {/* Mode Selection Tabs */}
-          <div role="tablist" class="tabs tabs-boxed w-full">
+          <div class="flex justify-center gap-2">
             <button
-              role="tab"
-              class={`tab flex-1 ${mode() === "pomodoro" ? "tab-active" : ""}`}
+              class={`btn btn-sm ${mode() === "pomodoro" ? "btn-primary" : "btn-ghost"} normal-case`}
               onClick={() => switchMode("pomodoro")}
             >
               Pomodoro
             </button>
             <button
-              role="tab"
-              class={`tab flex-1 ${mode() === "shortBreak" ? "tab-active" : ""}`}
+              class={`btn btn-sm ${mode() === "shortBreak" ? "btn-primary" : "btn-ghost"} normal-case`}
               onClick={() => switchMode("shortBreak")}
             >
               Short Break
             </button>
             <button
-              role="tab"
-              class={`tab flex-1 ${mode() === "longBreak" ? "tab-active" : ""}`}
+              class={`btn btn-sm ${mode() === "longBreak" ? "btn-primary" : "btn-ghost"} normal-case`}
               onClick={() => switchMode("longBreak")}
             >
               Long Break
             </button>
           </div>
 
-          {/* Timer Display */}
-          <div class="bg-primary rounded-2xl p-8 w-full">
-            <div class="text-8xl font-bold text-primary-content tabular-nums">
+          {/* Massive Timer Display */}
+          <div class="text-center py-8">
+            <div class="text-9xl font-bold tabular-nums tracking-tight">
               {formatTime(timeLeft())}
             </div>
           </div>
@@ -161,53 +158,56 @@ function HomePage() {
           />
 
           {/* Control Buttons */}
-          <div class="flex gap-3 w-full">
+          <div class="flex justify-center gap-3">
             <button
-              class={`btn ${isRunning() ? "btn-warning" : "btn-success"} flex-1`}
+              class={`btn btn-wide ${isRunning() ? "btn-warning" : "btn-primary"} text-lg font-semibold uppercase`}
               onClick={toggleTimer}
             >
               {isRunning() ? "PAUSE" : "START"}
             </button>
             <button
-              class="btn btn-outline flex-1"
+              class="btn btn-square btn-ghost"
               onClick={resetTimer}
             >
-              RESET
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              </svg>
             </button>
           </div>
 
-          {/* Session Counter */}
-          <Show when={mode() === "pomodoro"}>
-            <div class="text-center w-full">
-              <div class="text-sm opacity-70">Session #{sessionCount() + 1}</div>
-              <div class="text-5xl font-bold text-primary my-2">{sessionCount()}</div>
-              <div class="text-xs opacity-60">
-                {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)} until long break
+          {/* Session Info */}
+          <Show
+            when={mode() === "pomodoro"}
+            fallback={
+              <div class="text-center py-2">
+                <div class="badge badge-primary badge-lg">
+                  {mode() === "shortBreak" && "Time for a short break!"}
+                  {mode() === "longBreak" && "Enjoy your long break!"}
+                </div>
+              </div>
+            }
+          >
+            <div class="flex justify-center items-center gap-6 text-center">
+              <div>
+                <div class="text-xs opacity-60 uppercase">Session</div>
+                <div class="text-2xl font-bold text-primary">#{sessionCount() + 1}</div>
+              </div>
+              <div class="divider divider-horizontal m-0" />
+              <div>
+                <div class="text-xs opacity-60 uppercase">Completed</div>
+                <div class="text-2xl font-bold text-primary">{sessionCount()}</div>
+              </div>
+              <div class="divider divider-horizontal m-0" />
+              <div>
+                <div class="text-xs opacity-60 uppercase">Until Break</div>
+                <div class="text-2xl font-bold text-primary">
+                  {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
+                </div>
               </div>
             </div>
           </Show>
-
-          {/* Mode Description */}
-          <div class="alert alert-info py-2 px-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              class="stroke-current shrink-0 w-5 h-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span class="text-sm">
-              {mode() === "pomodoro" && "Time to focus!"}
-              {mode() === "shortBreak" && "Take a short break!"}
-              {mode() === "longBreak" && "Enjoy your long break!"}
-            </span>
-          </div>
         </div>
       </div>
     </div>
