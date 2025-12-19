@@ -1,4 +1,4 @@
-use tauri_plugin_sql::{Builder, Migration, MigrationKind};
+use tauri_plugin_sql::{Migration, MigrationKind};
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -11,15 +11,19 @@ pub fn run() {
         // Define your migrations here
         Migration {
             version: 1,
-            description: "create_initial_tables",
-            sql: "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);",
+            description: "create users table",
+            sql: "CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT
+            )",
             kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()
         .plugin(
             tauri_plugin_sql::Builder::default()
-                .add_migrations("sqlite:mydatabase.db", migrations)
+                .add_migrations("sqlite:mydatabase2.db", migrations)
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
