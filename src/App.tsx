@@ -1,11 +1,19 @@
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import logo from "./assets/logo.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
+import Database from '@tauri-apps/plugin-sql';
 
 function App() {
   const [greetMsg, setGreetMsg] = createSignal("");
   const [name, setName] = createSignal("");
+
+
+  onMount(async () => {
+        console.log("hi");
+        const db = await Database.load('sqlite:standclock.db');
+        console.log(db);
+  });
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
