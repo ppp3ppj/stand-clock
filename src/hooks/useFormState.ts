@@ -24,20 +24,21 @@ export interface FormState<T> {
 
 /**
  * Custom hook for managing form state with change detection
+ * Note: Due to SolidJS signal constraints, this is a simplified version
  */
 export function useFormState<T extends Record<string, any>>(
   options: FormStateOptions<T>
 ): FormState<T> {
-  const [values, setValuesSignal] = createSignal<T>(options.initialValues);
-  const [initialValues, setInitialValues] = createSignal<T>(options.initialValues);
+  const [values, setValuesSignal] = createSignal<T>({ ...options.initialValues });
+  const [initialValues, setInitialValues] = createSignal<T>({ ...options.initialValues });
   const [isSaving, setIsSaving] = createSignal(false);
 
   const setValues = (newValues: Partial<T>) => {
-    setValuesSignal((prev) => ({ ...prev, ...newValues }));
+    setValuesSignal((prev: T) => ({ ...prev, ...newValues }));
   };
 
   const setValue = <K extends keyof T>(key: K, value: T[K]) => {
-    setValuesSignal((prev) => ({ ...prev, [key]: value }));
+    setValuesSignal((prev: T) => ({ ...prev, [key]: value }));
   };
 
   const hasChanges = (): boolean => {
@@ -55,7 +56,7 @@ export function useFormState<T extends Record<string, any>>(
     setIsSaving(true);
     try {
       await options.onSave(values());
-      setInitialValues(values());
+      setInitialValues(() => ({ ...values() }));
     } finally {
       setIsSaving(false);
     }
@@ -65,13 +66,13 @@ export function useFormState<T extends Record<string, any>>(
     if (options.onReset) {
       await options.onReset();
     }
-    setValuesSignal(options.initialValues);
-    setInitialValues(options.initialValues);
+    setValuesSignal(() => ({ ...options.initialValues }));
+    setInitialValues(() => ({ ...options.initialValues }));
   };
 
   const syncWithInitial = (newInitial: T) => {
-    setInitialValues(newInitial);
-    setValuesSignal(newInitial);
+    setInitialValues(() => ({ ...newInitial }));
+    setValuesSignal(() => ({ ...newInitial }));
   };
 
   return {
