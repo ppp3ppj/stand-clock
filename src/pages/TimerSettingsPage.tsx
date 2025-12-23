@@ -11,6 +11,7 @@ import { useSoundEffects } from "../hooks/useSoundEffects";
 import { DurationSlider } from "../components/DurationSlider";
 import { SessionCycleVisualizer } from "../components/SessionCycleVisualizer";
 import { SoundSettings } from "../components/SoundSettings";
+import { TimerRunningAlert } from "../components/TimerRunningAlert";
 
 const TimerSettingsPage: Component = () => {
   const { isLoading } = useTimerSettings();
@@ -31,6 +32,8 @@ const TimerSettingsPage: Component = () => {
           <h1 class="text-4xl font-bold mb-2">Timer Settings</h1>
           <p class="text-base-content/70">Customize your work and break durations</p>
         </div>
+
+        <TimerRunningAlert />
 
         <div class="space-y-6">
           {/* Work Session Duration */}

@@ -15,6 +15,7 @@ import {
   AllTimeStatsCard,
 } from "../components/StatisticsCards";
 import { BreakActivitiesCard } from "../components/BreakActivitiesCard";
+import { TimerRunningAlert } from "../components/TimerRunningAlert";
 
 function StatisticsPage() {
   const {
@@ -31,6 +32,8 @@ function StatisticsPage() {
 
   return (
     <div class="container mx-auto p-4 max-w-6xl">
+      <TimerRunningAlert />
+      
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold">Statistics</h1>
 
