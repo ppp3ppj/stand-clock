@@ -217,21 +217,14 @@ function HomePage() {
               onClick={resetTimer}
               title="Reset"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                <path d="M21 3v5h-5"/>
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-              </svg>
+              <i class="ri-restart-line text-2xl"></i>
             </button>
             <button
               class="btn btn-square btn-ghost"
               onClick={skipToNext}
               title="Skip to next phase"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 4l10 8-10 8V4z"/>
-                <path d="M19 5v14"/>
-              </svg>
+              <i class="ri-skip-forward-fill text-2xl"></i>
             </button>
           </div>
 

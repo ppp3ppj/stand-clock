@@ -382,11 +382,7 @@ const TimerSettingsPage: Component = () => {
                     class="btn btn-outline btn-primary gap-2"
                     onClick={playTestSound}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                    </svg>
+                    <i class="ri-volume-up-line text-xl"></i>
                     Test Sound
                   </button>
                 </div>
@@ -419,9 +415,7 @@ const TimerSettingsPage: Component = () => {
                   disabled={!hasChanges() || isSaving()}
                 >
                   <Show when={isSaving()} fallback={
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <i class="ri-check-line text-2xl"></i>
                   }>
                     <span class="loading loading-spinner"></span>
                   </Show>
