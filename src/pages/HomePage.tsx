@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
+import clickSound from "../assets/sounds/click3.ogg";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -13,6 +14,13 @@ function HomePage() {
   const [sessionCount, setSessionCount] = createSignal(0);
 
   let intervalId: number | null = null;
+
+  // Play click sound for button actions
+  const playClickSound = () => {
+    const audio = new Audio(clickSound);
+    audio.volume = 0.5;
+    audio.play().catch(err => console.log("Audio play failed:", err));
+  };
 
   // Play notification sound
   const playNotificationSound = () => {
@@ -74,6 +82,8 @@ function HomePage() {
 
   // Start/Pause timer
   const toggleTimer = () => {
+    playClickSound(); // Play click sound on every toggle
+
     if (isRunning()) {
       // Pause
       if (intervalId !== null) {
