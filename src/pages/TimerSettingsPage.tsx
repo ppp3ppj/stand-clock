@@ -1,5 +1,6 @@
 import { Component, createSignal, Show } from 'solid-js';
 import { useTimerSettings } from '../contexts/TimerSettingsContext';
+import notificationSound from '../assets/sounds/mixkit-notification-bell-592.wav';
 
 const TimerSettingsPage: Component = () => {
   const { settings, updateSettings, resetToDefaults, isLoading } = useTimerSettings();
@@ -53,30 +54,9 @@ const TimerSettingsPage: Component = () => {
 
   // Test notification sound
   const playTestSound = () => {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-    const playTone = (frequency: number, startTime: number, duration: number) => {
-      const osc = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-
-      osc.connect(gain);
-      gain.connect(audioContext.destination);
-
-      osc.frequency.value = frequency;
-      osc.type = 'sine';
-
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-
-      osc.start(startTime);
-      osc.stop(startTime + duration);
-    };
-
-    const now = audioContext.currentTime;
-    playTone(523.25, now, 0.2); // C5
-    playTone(659.25, now + 0.2, 0.2); // E5
-    playTone(783.99, now + 0.4, 0.4); // G5
+    const audio = new Audio(notificationSound);
+    audio.volume = 0.6;
+    audio.play().catch(err => console.log("Test sound play failed:", err));
   };
 
   const workPresets = [15, 25, 45, 50, 55];

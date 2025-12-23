@@ -1,6 +1,7 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import clickSound from "../assets/sounds/click1.ogg";
+import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -25,37 +26,9 @@ function HomePage() {
   // Play notification sound
   const playNotificationSound = () => {
     if (settings().soundEnabled) {
-      // Create an audio context and generate a pleasant notification sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // Pleasant notification tone (C5 -> E5 -> G5)
-      const playTone = (frequency: number, startTime: number, duration: number) => {
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
-        
-        osc.connect(gain);
-        gain.connect(audioContext.destination);
-        
-        osc.frequency.value = frequency;
-        osc.type = 'sine';
-        
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-        
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-      };
-
-      const now = audioContext.currentTime;
-      playTone(523.25, now, 0.2); // C5
-      playTone(659.25, now + 0.2, 0.2); // E5
-      playTone(783.99, now + 0.4, 0.4); // G5
+      const audio = new Audio(notificationSound);
+      audio.volume = 0.6;
+      audio.play().catch(err => console.log("Notification sound play failed:", err));
     }
   };
 
