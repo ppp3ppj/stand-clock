@@ -1,6 +1,6 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
-import clickSound from "../assets/sounds/click3.ogg";
+import clickSound from "../assets/sounds/click1.ogg";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -18,7 +18,7 @@ function HomePage() {
   // Play click sound for button actions
   const playClickSound = () => {
     const audio = new Audio(clickSound);
-    audio.volume = 0.5;
+    audio.volume = 0.37;
     audio.play().catch(err => console.log("Audio play failed:", err));
   };
 
