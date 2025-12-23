@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup, Show } from "solid-js";
+import { createSignal, onMount, onCleanup, createEffect, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import { useSessionTracking } from "../contexts/SessionTrackingContext";
 import BreakActivitySelector from "../components/BreakActivitySelector";
@@ -9,7 +9,7 @@ import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
 function HomePage() {
-  const { settings } = useTimerSettings();
+  const { settings, isLoading: settingsLoading } = useTimerSettings();
   const {
     startSession: trackStartSession,
     completeSession: trackCompleteSession,
@@ -69,10 +69,12 @@ function HomePage() {
     setIsRunning(false);
   };
 
-  // Initialize on mount only if timer hasn't been set yet
-  if (timeLeft() === 0) {
-    initializeTimer(mode());
-  }
+  // Initialize timer when settings are loaded and timer hasn't been set yet
+  createEffect(() => {
+    if (!settingsLoading() && timeLeft() === 0) {
+      initializeTimer(mode());
+    }
+  });
 
   // Resume timer if it was running before leaving
   onMount(() => {
