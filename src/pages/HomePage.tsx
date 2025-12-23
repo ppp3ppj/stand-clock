@@ -2,6 +2,7 @@ import { createSignal, onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import clickSound from "../assets/sounds/click1.ogg";
 import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
+import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -21,6 +22,13 @@ function HomePage() {
     const audio = new Audio(clickSound);
     audio.volume = 0.37;
     audio.play().catch(err => console.log("Audio play failed:", err));
+  };
+
+  // Play pop alert sound for reset/skip actions
+  const playPopAlertSound = () => {
+    const audio = new Audio(popAlertSound);
+    audio.volume = 0.27;
+    audio.play().catch(err => console.log("Pop alert sound play failed:", err));
   };
 
   // Play notification sound
@@ -103,6 +111,8 @@ function HomePage() {
 
   // Reset timer
   const resetTimer = () => {
+    playPopAlertSound(); // Play pop alert sound
+
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
@@ -124,6 +134,8 @@ function HomePage() {
 
   // Skip to next phase
   const skipToNext = () => {
+    playPopAlertSound(); // Play pop alert sound
+
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
