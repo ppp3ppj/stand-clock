@@ -51,6 +51,34 @@ const TimerSettingsPage: Component = () => {
     }
   };
 
+  // Test notification sound
+  const playTestSound = () => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+    const playTone = (frequency: number, startTime: number, duration: number) => {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc.frequency.value = frequency;
+      osc.type = 'sine';
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    const now = audioContext.currentTime;
+    playTone(523.25, now, 0.2); // C5
+    playTone(659.25, now + 0.2, 0.2); // E5
+    playTone(783.99, now + 0.4, 0.4); // G5
+  };
+
   const workPresets = [15, 25, 45, 50, 55];
   const shortBreakPresets = [3, 5, 7, 10];
   const longBreakPresets = [10, 15, 20, 30];
@@ -367,6 +395,22 @@ const TimerSettingsPage: Component = () => {
                 </svg>
                 <span class="text-sm">A notification sound will play when your work session or break ends</span>
               </div>
+
+              <Show when={soundEnabled()}>
+                <div class="mt-4">
+                  <button
+                    class="btn btn-outline btn-primary gap-2"
+                    onClick={playTestSound}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    </svg>
+                    Test Sound
+                  </button>
+                </div>
+              </Show>
             </div>
           </div>
 
