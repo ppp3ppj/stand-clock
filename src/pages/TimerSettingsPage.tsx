@@ -1,5 +1,6 @@
 import { Component, createSignal, Show } from 'solid-js';
 import { useTimerSettings } from '../contexts/TimerSettingsContext';
+import notificationSound from '../assets/sounds/mixkit-notification-bell-592.wav';
 
 const TimerSettingsPage: Component = () => {
   const { settings, updateSettings, resetToDefaults, isLoading } = useTimerSettings();
@@ -9,6 +10,7 @@ const TimerSettingsPage: Component = () => {
   const [shortBreakDuration, setShortBreakDuration] = createSignal(settings().shortBreakDuration);
   const [longBreakDuration, setLongBreakDuration] = createSignal(settings().longBreakDuration);
   const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = createSignal(settings().sessionsBeforeLongBreak);
+  const [soundEnabled, setSoundEnabled] = createSignal(settings().soundEnabled);
   const [isSaving, setIsSaving] = createSignal(false);
 
   // Update local state when settings load
@@ -17,6 +19,7 @@ const TimerSettingsPage: Component = () => {
     setShortBreakDuration(settings().shortBreakDuration);
     setLongBreakDuration(settings().longBreakDuration);
     setSessionsBeforeLongBreak(settings().sessionsBeforeLongBreak);
+    setSoundEnabled(settings().soundEnabled);
   };
 
   // Watch for settings changes
@@ -25,7 +28,8 @@ const TimerSettingsPage: Component = () => {
       workDuration() !== settings().workDuration ||
       shortBreakDuration() !== settings().shortBreakDuration ||
       longBreakDuration() !== settings().longBreakDuration ||
-      sessionsBeforeLongBreak() !== settings().sessionsBeforeLongBreak
+      sessionsBeforeLongBreak() !== settings().sessionsBeforeLongBreak ||
+      soundEnabled() !== settings().soundEnabled
     );
   };
 
@@ -36,6 +40,7 @@ const TimerSettingsPage: Component = () => {
       shortBreakDuration: shortBreakDuration(),
       longBreakDuration: longBreakDuration(),
       sessionsBeforeLongBreak: sessionsBeforeLongBreak(),
+      soundEnabled: soundEnabled(),
     });
     setIsSaving(false);
   };
@@ -45,6 +50,13 @@ const TimerSettingsPage: Component = () => {
       await resetToDefaults();
       syncLocalState();
     }
+  };
+
+  // Test notification sound
+  const playTestSound = () => {
+    const audio = new Audio(notificationSound);
+    audio.volume = 0.6;
+    audio.play().catch(err => console.log("Test sound play failed:", err));
   };
 
   const workPresets = [15, 25, 45, 50, 55];
@@ -333,6 +345,51 @@ const TimerSettingsPage: Component = () => {
             </div>
           </div>
 
+          {/* Sound Notification Settings */}
+          <div class="card bg-base-200 shadow-xl">
+            <div class="card-body">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h2 class="card-title text-2xl mb-1">Sound Notification</h2>
+                  <p class="text-sm text-base-content/70">Play a sound when timer completes</p>
+                </div>
+              </div>
+
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-4">
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-primary toggle-lg"
+                    checked={soundEnabled()}
+                    onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
+                  />
+                  <span class="label-text text-lg">
+                    {soundEnabled() ? 'Enabled' : 'Disabled'}
+                  </span>
+                </label>
+              </div>
+
+              <div class="alert alert-info mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm">A notification sound will play when your work session or break ends</span>
+              </div>
+
+              <Show when={soundEnabled()}>
+                <div class="mt-4">
+                  <button
+                    class="btn btn-outline btn-primary gap-2"
+                    onClick={playTestSound}
+                  >
+                    <i class="ri-volume-up-line text-xl"></i>
+                    Test Sound
+                  </button>
+                </div>
+              </Show>
+            </div>
+          </div>
+
           {/* Save/Reset Buttons */}
           <div class="card bg-base-200 shadow-xl">
             <div class="card-body">
@@ -358,9 +415,7 @@ const TimerSettingsPage: Component = () => {
                   disabled={!hasChanges() || isSaving()}
                 >
                   <Show when={isSaving()} fallback={
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <i class="ri-check-line text-2xl"></i>
                   }>
                     <span class="loading loading-spinner"></span>
                   </Show>

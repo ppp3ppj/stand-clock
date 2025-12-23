@@ -4,6 +4,7 @@ import { Router } from "@solidjs/router";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { TimerSettingsProvider } from "./contexts/TimerSettingsContext";
 import App from "./App";
+import 'remixicon/fonts/remixicon.css';
 
 render(() => (
   <ThemeProvider>
