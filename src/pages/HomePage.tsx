@@ -32,6 +32,7 @@ function HomePage() {
   } = useSessionTracking();
 
   const [showBreakActivitySelector, setShowBreakActivitySelector] = createSignal(false);
+  const [hasSessionStarted, setHasSessionStarted] = createSignal(false);
 
   let intervalId: number | null = null;
 
@@ -76,6 +77,24 @@ function HomePage() {
     }
   });
 
+  // Update timer when settings change, but only if session hasn't started
+  createEffect(() => {
+    if (!settingsLoading() && !hasSessionStarted() && !isRunning()) {
+      // Settings changed and we have a fresh timer - update it
+      const durations = {
+        pomodoro: settings().workDuration * 60,
+        shortBreak: settings().shortBreakDuration * 60,
+        longBreak: settings().longBreakDuration * 60,
+      };
+      const newDuration = durations[mode()];
+
+      // Only update if the duration actually changed
+      if (timeLeft() !== newDuration && timeLeft() !== 0) {
+        setTimeLeft(newDuration);
+      }
+    }
+  });
+
   // Resume timer if it was running before leaving
   onMount(() => {
     if (wasRunningBeforeLeave()) {
@@ -91,6 +110,7 @@ function HomePage() {
               intervalId = null;
             }
             setIsRunning(false);
+            setHasSessionStarted(false); // Session ended
 
             // Play notification sound
             playNotificationSound();
@@ -159,6 +179,7 @@ function HomePage() {
     } else {
       // Start
       setIsRunning(true);
+      setHasSessionStarted(true); // Mark that a session has started
 
       // Track session start
       const durations = {
@@ -182,6 +203,7 @@ function HomePage() {
               intervalId = null;
             }
             setIsRunning(false);
+            setHasSessionStarted(false); // Session ended
 
             // Play notification sound
             playNotificationSound();
@@ -228,6 +250,7 @@ function HomePage() {
       intervalId = null;
     }
     setIsRunning(false);
+    setHasSessionStarted(false); // Reset session state
     initializeTimer(mode());
   };
 
@@ -239,6 +262,7 @@ function HomePage() {
     }
     setMode(newMode);
     setIsRunning(false);
+    setHasSessionStarted(false); // Reset session state
     initializeTimer(newMode);
   };
 
