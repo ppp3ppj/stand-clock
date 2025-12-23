@@ -3,6 +3,7 @@ import { ParentComponent } from "solid-js";
 import HomePage from "./pages/HomePage";
 import SettingsPage from "./pages/SettingsPage";
 import TimerSettingsPage from "./pages/TimerSettingsPage";
+import StatisticsPage from "./pages/StatisticsPage";
 import "./App.css";
 
 const Layout: ParentComponent = (props) => {
@@ -13,10 +14,16 @@ const Layout: ParentComponent = (props) => {
           <A href="/" class="btn btn-ghost text-xl">Stand Clock</A>
         </div>
         <div class="flex-none gap-2">
+          <A href="/statistics" class="btn btn-ghost">
+            <i class="ri-bar-chart-line"></i>
+            Statistics
+          </A>
           <A href="/timer-settings" class="btn btn-ghost">
+            <i class="ri-timer-line"></i>
             Timer
           </A>
           <A href="/settings" class="btn btn-ghost">
+            <i class="ri-palette-line"></i>
             Theme
           </A>
         </div>
@@ -30,6 +37,7 @@ function App() {
   return (
     <Route path="/" component={Layout}>
       <Route path="/" component={HomePage} />
+      <Route path="/statistics" component={StatisticsPage} />
       <Route path="/timer-settings" component={TimerSettingsPage} />
       <Route path="/settings" component={SettingsPage} />
     </Route>
