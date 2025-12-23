@@ -1,440 +1,94 @@
-import { createSignal, onMount, onCleanup, createEffect, Show } from "solid-js";
+/**
+ * Home Page Component
+ * Main timer page with pomodoro functionality
+ * Refactored following OOP, DRY, and clean code principles
+ */
+
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import { useSessionTracking } from "../contexts/SessionTrackingContext";
+import { usePomodoroSession } from "../hooks/usePomodoroSession";
+import { useSoundEffects } from "../hooks/useSoundEffects";
 import BreakActivitySelector from "../components/BreakActivitySelector";
-import clickSound from "../assets/sounds/click1.ogg";
-import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
-import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
-
-type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
+import ModeSelector from "../components/ModeSelector";
+import TimerDisplay from "../components/TimerDisplay";
+import TimerControls from "../components/TimerControls";
+import SessionInfo from "../components/SessionInfo";
+import StreakBadge from "../components/StreakBadge";
 
 function HomePage() {
-  const { settings, isLoading: settingsLoading } = useTimerSettings();
-  const {
-    startSession: trackStartSession,
-    completeSession: trackCompleteSession,
-    skipSession: trackSkipSession,
-    abandonSession: trackAbandonSession,
-    selectBreakActivity,
-    todayStats,
-    streakInfo,
-    // Use persistent timer state from context
-    currentMode: mode,
-    setCurrentMode: setMode,
-    timeLeft,
-    setTimeLeft,
-    isTimerRunning: isRunning,
-    setIsTimerRunning: setIsRunning,
-    sessionCount,
-    setSessionCount,
-    wasRunningBeforeLeave,
-    setWasRunningBeforeLeave,
-  } = useSessionTracking();
+  const { settings } = useTimerSettings();
+  const { todayStats, streakInfo } = useSessionTracking();
+  
+  // Initialize sound effects
+  const { playClick, playNotification, playPopAlert } = useSoundEffects(() => settings().soundEnabled);
+  
+  // Initialize pomodoro session management
+  const session = usePomodoroSession(playNotification, playPopAlert);
 
-  const [showBreakActivitySelector, setShowBreakActivitySelector] = createSignal(false);
-  const [hasSessionStarted, setHasSessionStarted] = createSignal(false);
-
-  let intervalId: number | null = null;
-
-  // Play click sound for button actions
-  const playClickSound = () => {
-    const audio = new Audio(clickSound);
-    audio.volume = 0.37;
-    audio.play().catch(err => console.log("Audio play failed:", err));
+  // Wrapper functions to add sound effects
+  const handleToggle = () => {
+    playClick();
+    session.toggleTimer();
   };
 
-  // Play pop alert sound for reset/skip actions
-  const playPopAlertSound = () => {
-    const audio = new Audio(popAlertSound);
-    audio.volume = 0.27;
-    audio.play().catch(err => console.log("Pop alert sound play failed:", err));
+  const handleReset = () => {
+    session.resetTimer();
   };
 
-  // Play notification sound
-  const playNotificationSound = () => {
-    if (settings().soundEnabled) {
-      const audio = new Audio(notificationSound);
-      audio.volume = 0.6;
-      audio.play().catch(err => console.log("Notification sound play failed:", err));
-    }
+  const handleSkip = () => {
+    session.skipToNext();
   };
 
-  // Initialize timer with current mode duration
-  const initializeTimer = (selectedMode: TimerMode) => {
-    const durations = {
-      pomodoro: settings().workDuration * 60,
-      shortBreak: settings().shortBreakDuration * 60,
-      longBreak: settings().longBreakDuration * 60,
-    };
-    setTimeLeft(durations[selectedMode]);
-    setIsRunning(false);
-  };
-
-  // Initialize timer when settings are loaded and timer hasn't been set yet
-  createEffect(() => {
-    if (!settingsLoading() && timeLeft() === 0) {
-      initializeTimer(mode());
-    }
-  });
-
-  // Update timer when settings change, but only if session hasn't started
-  createEffect(() => {
-    if (!settingsLoading() && !hasSessionStarted() && !isRunning()) {
-      // Settings changed and we have a fresh timer - update it
-      const durations = {
-        pomodoro: settings().workDuration * 60,
-        shortBreak: settings().shortBreakDuration * 60,
-        longBreak: settings().longBreakDuration * 60,
-      };
-      const newDuration = durations[mode()];
-
-      // Only update if the duration actually changed
-      if (timeLeft() !== newDuration && timeLeft() !== 0) {
-        setTimeLeft(newDuration);
-      }
-    }
-  });
-
-  // Resume timer if it was running before leaving
-  onMount(() => {
-    if (wasRunningBeforeLeave()) {
-      // Resume timer without tracking a new session
-      setIsRunning(true);
-
-      intervalId = window.setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            // Timer completed
-            if (intervalId !== null) {
-              clearInterval(intervalId);
-              intervalId = null;
-            }
-            setIsRunning(false);
-            setHasSessionStarted(false); // Session ended
-
-            // Play notification sound
-            playNotificationSound();
-
-            // Track session completion
-            trackCompleteSession().catch(err =>
-              console.error("Failed to track session completion:", err)
-            );
-
-            // Handle session completion
-            if (mode() === "pomodoro") {
-              const newSessionCount = sessionCount() + 1;
-              setSessionCount(newSessionCount);
-
-              // Auto-switch to break
-              if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
-                switchMode("longBreak");
-              } else {
-                switchMode("shortBreak");
-              }
-            }
-
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      setWasRunningBeforeLeave(false); // Clear the flag
-    }
-  });
-
-  // Pause timer when leaving HomePage
-  onCleanup(() => {
-    if (isRunning()) {
-      // Timer is running, pause it
-      if (intervalId !== null) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      setWasRunningBeforeLeave(true); // Mark that it was running
-      setIsRunning(false); // Stop the timer
-    } else {
-      setWasRunningBeforeLeave(false); // Ensure flag is clear if not running
-    }
-  });
-
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
-
-  // Start/Pause timer
-  const toggleTimer = () => {
-    playClickSound(); // Play click sound on every toggle
-
-    if (isRunning()) {
-      // Pause
-      if (intervalId !== null) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-      setIsRunning(false);
-    } else {
-      // Start
-      setIsRunning(true);
-      setHasSessionStarted(true); // Mark that a session has started
-
-      // Track session start
-      const durations = {
-        pomodoro: settings().workDuration * 60,
-        shortBreak: settings().shortBreakDuration * 60,
-        longBreak: settings().longBreakDuration * 60,
-      };
-      trackStartSession(mode(), durations[mode()]);
-
-      // Show break activity selector when starting a break
-      if (mode() !== "pomodoro") {
-        setShowBreakActivitySelector(true);
-      }
-
-      intervalId = window.setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            // Timer completed
-            if (intervalId !== null) {
-              clearInterval(intervalId);
-              intervalId = null;
-            }
-            setIsRunning(false);
-            setHasSessionStarted(false); // Session ended
-
-            // Play notification sound
-            playNotificationSound();
-
-            // Track session completion
-            trackCompleteSession().catch(err =>
-              console.error("Failed to track session completion:", err)
-            );
-
-            // Handle session completion
-            if (mode() === "pomodoro") {
-              const newSessionCount = sessionCount() + 1;
-              setSessionCount(newSessionCount);
-
-              // Auto-switch to break
-              if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
-                switchMode("longBreak");
-              } else {
-                switchMode("shortBreak");
-              }
-            }
-
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-  };
-
-  // Reset timer
-  const resetTimer = () => {
-    playPopAlertSound(); // Play pop alert sound
-
-    // Track abandoned session if timer was running
-    if (isRunning()) {
-      trackAbandonSession().catch(err =>
-        console.error("Failed to track abandoned session:", err)
-      );
-    }
-
-    if (intervalId !== null) {
-      clearInterval(intervalId);
-      intervalId = null;
-    }
-    setIsRunning(false);
-    setHasSessionStarted(false); // Reset session state
-    initializeTimer(mode());
-  };
-
-  // Switch mode
-  const switchMode = (newMode: TimerMode) => {
-    if (intervalId !== null) {
-      clearInterval(intervalId);
-      intervalId = null;
-    }
-    setMode(newMode);
-    setIsRunning(false);
-    setHasSessionStarted(false); // Reset session state
-    initializeTimer(newMode);
-  };
-
-  // Skip to next phase
-  const skipToNext = () => {
-    playPopAlertSound(); // Play pop alert sound
-
-    // Track skipped session if timer was running
-    if (isRunning()) {
-      trackSkipSession().catch(err =>
-        console.error("Failed to track skipped session:", err)
-      );
-    }
-
-    if (intervalId !== null) {
-      clearInterval(intervalId);
-      intervalId = null;
-    }
-    setIsRunning(false);
-
-    if (mode() === "pomodoro") {
-      // Complete the pomodoro session and move to break
-      const newSessionCount = sessionCount() + 1;
-      setSessionCount(newSessionCount);
-
-      if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
-        switchMode("longBreak");
-      } else {
-        switchMode("shortBreak");
-      }
-    } else {
-      // From break, go back to pomodoro
-      switchMode("pomodoro");
-    }
-  };
-
-
-  // Calculate progress percentage
-  const getProgress = () => {
-    const durations = {
-      pomodoro: settings().workDuration * 60,
-      shortBreak: settings().shortBreakDuration * 60,
-      longBreak: settings().longBreakDuration * 60,
-    };
-    const total = durations[mode()];
-    return total > 0 ? ((total - timeLeft()) / total) * 100 : 0;
-  };
-
-  // Handle break activity selection
-  const handleBreakActivitySelect = (activity: string) => {
-    selectBreakActivity(activity);
-    setShowBreakActivitySelector(false);
+  const handleModeChange = (newMode: "pomodoro" | "shortBreak" | "longBreak") => {
+    playClick();
+    session.switchMode(newMode);
   };
 
   return (
     <div class="min-h-screen flex items-center justify-center p-4">
       {/* Break Activity Selector Modal */}
       <BreakActivitySelector
-        isOpen={showBreakActivitySelector()}
-        onSelect={handleBreakActivitySelect}
-        onClose={() => setShowBreakActivitySelector(false)}
+        isOpen={session.showBreakActivitySelector()}
+        onSelect={session.handleBreakActivitySelect}
+        onClose={session.closeBreakActivitySelector}
       />
 
       <div class="card bg-base-200/50 backdrop-blur-sm shadow-2xl w-full max-w-lg relative">
         {/* Streak Badge */}
-        <Show when={streakInfo().currentStreak > 0}>
-          <div class="absolute -top-3 -right-3 z-10">
-            <div class="badge badge-primary badge-lg gap-2 px-4 py-3 shadow-lg">
-              <i class="ri-fire-line text-lg"></i>
-              <span class="font-bold">{streakInfo().currentStreak}</span>
-              <span class="text-xs opacity-80">day{streakInfo().currentStreak !== 1 ? 's' : ''}</span>
-            </div>
-          </div>
-        </Show>
+        <StreakBadge streakInfo={streakInfo()} />
 
         <div class="card-body p-8 gap-6">
           {/* Mode Selection Tabs */}
-          <div class="flex justify-center gap-2">
-            <button
-              class={`btn btn-sm ${mode() === "pomodoro" ? "btn-primary" : "btn-ghost"} normal-case`}
-              onClick={() => switchMode("pomodoro")}
-            >
-              Pomodoro
-            </button>
-            <button
-              class={`btn btn-sm ${mode() === "shortBreak" ? "btn-primary" : "btn-ghost"} normal-case`}
-              onClick={() => switchMode("shortBreak")}
-            >
-              Short Break
-            </button>
-            <button
-              class={`btn btn-sm ${mode() === "longBreak" ? "btn-primary" : "btn-ghost"} normal-case`}
-              onClick={() => switchMode("longBreak")}
-            >
-              Long Break
-            </button>
-          </div>
+          <ModeSelector
+            currentMode={session.mode()}
+            onModeChange={handleModeChange}
+          />
 
-          {/* Massive Timer Display */}
-          <div class="text-center py-8">
-            <div class="text-9xl font-bold tabular-nums tracking-tight">
-              {formatTime(timeLeft())}
-            </div>
-          </div>
+          {/* Timer Display */}
+          <TimerDisplay timeLeft={session.timeLeft()} />
 
           {/* Progress Bar */}
           <progress
             class="progress progress-primary w-full h-2"
-            value={getProgress()}
+            value={session.getProgress()}
             max="100"
           />
 
           {/* Control Buttons */}
-          <div class="flex justify-center gap-3">
-            <button
-              class={`btn btn-wide ${isRunning() ? "btn-warning" : "btn-primary"} text-lg font-semibold uppercase`}
-              onClick={toggleTimer}
-            >
-              {isRunning() ? "PAUSE" : "START"}
-            </button>
-            <button
-              class="btn btn-square btn-ghost"
-              onClick={resetTimer}
-              title="Reset"
-            >
-              <i class="ri-restart-line text-2xl"></i>
-            </button>
-            <button
-              class="btn btn-square btn-ghost"
-              onClick={skipToNext}
-              title="Skip to next phase"
-            >
-              <i class="ri-skip-forward-fill text-2xl"></i>
-            </button>
-          </div>
+          <TimerControls
+            isRunning={session.isRunning()}
+            onToggle={handleToggle}
+            onReset={handleReset}
+            onSkip={handleSkip}
+          />
 
           {/* Session Info */}
-          <Show
-            when={mode() === "pomodoro"}
-            fallback={
-              <div class="text-center py-2">
-                <div class="badge badge-primary badge-lg">
-                  {mode() === "shortBreak" && "Time for a short break!"}
-                  {mode() === "longBreak" && "Enjoy your long break!"}
-                </div>
-              </div>
-            }
-          >
-            <div class="flex justify-center items-center gap-4 text-center">
-              <div>
-                <div class="text-xs opacity-60 uppercase">Session</div>
-                <div class="text-2xl font-bold text-primary">#{sessionCount() + 1}</div>
-              </div>
-              <div class="divider divider-horizontal m-0" />
-              <div>
-                <div class="text-xs opacity-60 uppercase">This Session</div>
-                <div class="text-2xl font-bold text-primary">{sessionCount()}</div>
-              </div>
-              <div class="divider divider-horizontal m-0" />
-              <div>
-                <div class="text-xs opacity-60 uppercase">Today</div>
-                <div class="text-2xl font-bold text-primary">{todayStats().workSessionsCompleted}</div>
-              </div>
-              <div class="divider divider-horizontal m-0" />
-              <div>
-                <div class="text-xs opacity-60 uppercase">Until Break</div>
-                <div class="text-2xl font-bold text-primary">
-                  {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
-                </div>
-              </div>
-            </div>
-          </Show>
+          <SessionInfo
+            mode={session.mode()}
+            sessionCount={session.sessionCount()}
+            todayStats={todayStats()}
+            sessionsBeforeLongBreak={settings().sessionsBeforeLongBreak}
+          />
         </div>
       </div>
     </div>

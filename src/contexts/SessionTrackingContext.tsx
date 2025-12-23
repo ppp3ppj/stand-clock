@@ -1,7 +1,14 @@
+/**
+ * Session Tracking Context
+ * Manages session tracking with database persistence
+ * Improved with better error handling and separation of concerns
+ */
+
 import { createContext, useContext, createSignal, onMount, onCleanup, ParentComponent } from "solid-js";
 import { IUnitOfWork } from "../repositories/IUnitOfWork";
 import { createUnitOfWork } from "../repositories/SqliteUnitOfWork";
 import { Session, DailyStats, StreakInfo, DEFAULT_DAILY_STATS } from "../repositories/SessionTrackingRepository";
+import { getTodayDateString, calculateDuration } from "../utils/dateUtils";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -42,6 +49,7 @@ interface SessionTrackingContextValue {
   refreshStreak: () => Promise<void>;
 
   isLoading: () => boolean;
+  error: () => string | null;
 }
 
 const SessionTrackingContext = createContext<SessionTrackingContextValue>();
@@ -70,6 +78,7 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     lastActivityDate: null,
   });
   const [isLoading, setIsLoading] = createSignal(true);
+  const [error, setError] = createSignal<string | null>(null);
 
   // Timer state (persistent across navigation)
   const [currentMode, setCurrentMode] = createSignal<TimerMode>("pomodoro");
@@ -78,19 +87,15 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
   const [sessionCount, setSessionCount] = createSignal(0);
   const [wasRunningBeforeLeave, setWasRunningBeforeLeave] = createSignal(false);
 
-  // Get today's date in YYYY-MM-DD format
-  function getTodayDateString(): string {
-    const now = new Date();
-    return now.toISOString().split('T')[0];
-  }
-
   // Load initial data on mount
   onMount(async () => {
     try {
-      await refreshTodayStats();
-      await refreshStreak();
-    } catch (error) {
-      console.error("[SessionTrackingContext] Failed to load initial data:", error);
+      await Promise.all([refreshTodayStats(), refreshStreak()]);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load initial data";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +103,11 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
 
   // Cleanup on unmount
   onCleanup(async () => {
-    await unitOfWork.dispose();
+    try {
+      await unitOfWork.dispose();
+    } catch (err) {
+      console.error("[SessionTrackingContext] Cleanup error:", err);
+    }
   });
 
   const startSession = (type: TimerMode, plannedDuration: number) => {
@@ -125,7 +134,7 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
 
     try {
       const completedAt = new Date();
-      const actualDuration = Math.floor((completedAt.getTime() - session.startedAt.getTime()) / 1000);
+      const actualDuration = calculateDuration(session.startedAt, completedAt);
 
       const sessionRecord: Session = {
         sessionType: session.type,
@@ -142,13 +151,15 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
       setActiveSession(null);
 
       // Refresh stats after recording
-      await refreshTodayStats();
-      await refreshStreak();
+      await Promise.all([refreshTodayStats(), refreshStreak()]);
+      setError(null);
 
       console.log("[SessionTrackingContext] Session completed and recorded");
-    } catch (error) {
-      console.error("[SessionTrackingContext] Failed to complete session:", error);
-      throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to complete session";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -161,7 +172,7 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
 
     try {
       const completedAt = new Date();
-      const actualDuration = Math.floor((completedAt.getTime() - session.startedAt.getTime()) / 1000);
+      const actualDuration = calculateDuration(session.startedAt, completedAt);
 
       const sessionRecord: Session = {
         sessionType: session.type,
@@ -179,11 +190,14 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
 
       // Refresh stats after recording
       await refreshTodayStats();
+      setError(null);
 
       console.log("[SessionTrackingContext] Session skipped and recorded");
-    } catch (error) {
-      console.error("[SessionTrackingContext] Failed to skip session:", error);
-      throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to skip session";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -196,7 +210,7 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
 
     try {
       const completedAt = new Date();
-      const actualDuration = Math.floor((completedAt.getTime() - session.startedAt.getTime()) / 1000);
+      const actualDuration = calculateDuration(session.startedAt, completedAt);
 
       const sessionRecord: Session = {
         sessionType: session.type,
@@ -213,11 +227,14 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
 
       // Refresh stats after recording
       await refreshTodayStats();
+      setError(null);
 
       console.log("[SessionTrackingContext] Session abandoned and recorded");
-    } catch (error) {
-      console.error("[SessionTrackingContext] Failed to abandon session:", error);
-      throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to abandon session";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -230,8 +247,12 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     try {
       const stats = await unitOfWork.sessionTracking.getDailyStats(getTodayDateString());
       setTodayStats(stats);
-    } catch (error) {
-      console.error("[SessionTrackingContext] Failed to refresh today's stats:", error);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to refresh today's stats";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -239,8 +260,12 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     try {
       const streak = await unitOfWork.sessionTracking.getCurrentStreak();
       setStreakInfo(streak);
-    } catch (error) {
-      console.error("[SessionTrackingContext] Failed to refresh streak:", error);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to refresh streak";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -267,6 +292,7 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     refreshTodayStats,
     refreshStreak,
     isLoading,
+    error,
   };
 
   return (

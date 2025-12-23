@@ -1,3 +1,9 @@
+/**
+ * Theme Context
+ * Manages theme selection with localStorage persistence
+ * Supports DaisyUI themes with proper type safety
+ */
+
 import { createContext, useContext, createSignal, createEffect, ParentComponent } from "solid-js";
 
 const DAISY_THEMES = [
@@ -18,10 +24,38 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>();
 
+const STORAGE_KEY = 'daisy-theme';
+const DEFAULT_THEME: Theme = 'light';
+
+/**
+ * Get saved theme from localStorage with fallback
+ */
+function getSavedTheme(): Theme {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return (saved && DAISY_THEMES.includes(saved as Theme)) ? (saved as Theme) : DEFAULT_THEME;
+  } catch (error) {
+    console.warn("[ThemeContext] Failed to read theme from localStorage:", error);
+    return DEFAULT_THEME;
+  }
+}
+
+/**
+ * Save theme to localStorage
+ */
+function saveTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch (error) {
+    console.warn("[ThemeContext] Failed to save theme to localStorage:", error);
+  }
+}
+
+/**
+ * Provider for theme management with localStorage persistence
+ */
 export const ThemeProvider: ParentComponent = (props) => {
-  // Read initial theme from localStorage, fallback to 'light'
-  const savedTheme = localStorage.getItem('daisy-theme') as Theme || 'light';
-  const [theme, setTheme] = createSignal<Theme>(savedTheme);
+  const [theme, setTheme] = createSignal<Theme>(getSavedTheme());
 
   // Apply theme to document element
   createEffect(() => {
@@ -30,7 +64,7 @@ export const ThemeProvider: ParentComponent = (props) => {
 
   // Persist theme to localStorage
   createEffect(() => {
-    localStorage.setItem('daisy-theme', theme());
+    saveTheme(theme());
   });
 
   const value: ThemeContextValue = {

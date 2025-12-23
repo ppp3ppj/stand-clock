@@ -1,3 +1,9 @@
+/**
+ * Timer Settings Context
+ * Manages timer settings with Unit of Work pattern
+ * Improved with better error handling and documentation
+ */
+
 import { createContext, useContext, createSignal, onMount, onCleanup, ParentComponent } from "solid-js";
 import { IUnitOfWork } from "../repositories/IUnitOfWork";
 import { createUnitOfWork } from "../repositories/SqliteUnitOfWork";
@@ -8,6 +14,7 @@ interface TimerSettingsContextValue {
   updateSettings: (settings: Partial<TimerSettings>) => Promise<void>;
   resetToDefaults: () => Promise<void>;
   isLoading: () => boolean;
+  error: () => string | null;
 }
 
 const TimerSettingsContext = createContext<TimerSettingsContextValue>();
@@ -26,14 +33,18 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
 
   const [settings, setSettings] = createSignal<TimerSettings>(DEFAULT_TIMER_SETTINGS);
   const [isLoading, setIsLoading] = createSignal(true);
+  const [error, setError] = createSignal<string | null>(null);
 
   // Load settings from repository on mount
   onMount(async () => {
     try {
       const loadedSettings = await unitOfWork.timerSettings.load();
       setSettings(loadedSettings);
-    } catch (error) {
-      console.error("[TimerSettingsContext] Failed to load settings:", error);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load settings";
+      console.error("[TimerSettingsContext] " + errorMessage, err);
+      setError(errorMessage);
       // Keep default settings on error
     } finally {
       setIsLoading(false);
@@ -42,7 +53,11 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
 
   // Cleanup on unmount
   onCleanup(async () => {
-    await unitOfWork.dispose();
+    try {
+      await unitOfWork.dispose();
+    } catch (err) {
+      console.error("[TimerSettingsContext] Cleanup error:", err);
+    }
   });
 
   const updateSettings = async (newSettings: Partial<TimerSettings>) => {
@@ -51,9 +66,12 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
     try {
       await unitOfWork.timerSettings.save(updated);
       setSettings(updated);
-    } catch (error) {
-      console.error("[TimerSettingsContext] Failed to save settings:", error);
-      throw error;
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to save settings";
+      console.error("[TimerSettingsContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -61,9 +79,12 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
     try {
       await unitOfWork.timerSettings.reset();
       setSettings(DEFAULT_TIMER_SETTINGS);
-    } catch (error) {
-      console.error("[TimerSettingsContext] Failed to reset settings:", error);
-      throw error;
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to reset settings";
+      console.error("[TimerSettingsContext] " + errorMessage, err);
+      setError(errorMessage);
+      throw err;
     }
   };
 
@@ -72,6 +93,7 @@ export const TimerSettingsProvider: ParentComponent<TimerSettingsProviderProps> 
     updateSettings,
     resetToDefaults,
     isLoading,
+    error,
   };
 
   return (
