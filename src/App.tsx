@@ -23,27 +23,32 @@ const Layout: ParentComponent = (props) => {
 
         {/* Navigation Icons - Icon Only */}
         <nav class="flex flex-col gap-3 flex-1">
-          <A
-            href="/"
-            class="btn btn-ghost btn-square"
-            activeClass="btn-primary"
-            inactiveClass="btn-ghost"
-            end
-            title="Timer"
-          >
-            <i class="ri-timer-line text-2xl"></i>
-          </A>
+          <div class="lg:tooltip lg:tooltip-right" data-tip="Timer">
+            <A
+              href="/"
+              class="btn btn-ghost btn-square"
+              activeClass="btn-primary"
+              inactiveClass="btn-ghost"
+              end
+              title="Timer"
+            >
+              <i class="ri-timer-line text-2xl"></i>
+            </A>
+          </div>
 
-          <A
-            href="/timer-settings"
-            class="btn btn-ghost btn-square"
-            activeClass="btn-primary"
-            inactiveClass="btn-ghost"
-            title="Timer Settings"
-          >
-            <i class="ri-settings-4-line text-2xl"></i>
-          </A>
+          <div class="lg:tooltip lg:tooltip-right" data-tip="Timer Settings">
+            <A
+              href="/timer-settings"
+              class="btn btn-ghost btn-square"
+              activeClass="btn-primary"
+              inactiveClass="btn-ghost"
+              title="Timer Settings"
+            >
+              <i class="ri-settings-4-line text-2xl"></i>
+            </A>
+          </div>
 
+          <div class="lg:tooltip lg:tooltip-right" data-tip="Settings">
           <A
             href="/settings"
             class="btn btn-ghost btn-square"
@@ -53,6 +58,7 @@ const Layout: ParentComponent = (props) => {
           >
             <i class="ri-palette-line text-2xl"></i>
           </A>
+          </div>
         </nav>
       </aside>
 
