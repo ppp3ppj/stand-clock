@@ -36,7 +36,13 @@
 
 /* ==================== GLOBAL APPLICATION ==================== */
 @layer base {
-  html {
+  html, body {
     font-family: var(--font-sans);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100%;
   }
 }

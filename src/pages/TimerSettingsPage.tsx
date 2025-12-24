@@ -70,18 +70,20 @@ const TimerSettingsPage: Component = () => {
   };
 
   return (
-    <main class="container mx-auto p-4 md:p-8 max-w-4xl">
-      <Show when={!isLoading()} fallback={
-        <div class="flex justify-center items-center h-96">
-          <span class="loading loading-spinner loading-lg"></span>
-        </div>
-      }>
-        <div class="mb-8">
-          <h1 class="text-4xl font-bold mb-2">Timer Settings</h1>
-          <p class="text-base-content/70">Customize your work and break durations</p>
-        </div>
+    <div class="h-full flex flex-col">
+      <div class="flex-none bg-base-200/50 px-8 py-6 border-b border-base-300">
+        <h1 class="text-3xl font-bold mb-1">Timer Settings</h1>
+        <p class="text-base-content/70">Customize your work and break durations</p>
+      </div>
 
-        <div class="space-y-6">
+      <div class="flex-1 overflow-y-auto">
+        <Show when={!isLoading()} fallback={
+          <div class="flex justify-center items-center h-full">
+            <span class="loading loading-spinner loading-lg"></span>
+          </div>
+        }>
+          <div class="px-8 py-6">
+            <div class="max-w-4xl mx-auto space-y-6">
           {/* Work Session Duration */}
           <div class="card bg-base-200 shadow-xl">
             <div class="card-body">
@@ -424,9 +426,11 @@ const TimerSettingsPage: Component = () => {
               </div>
             </div>
           </div>
-        </div>
-      </Show>
-    </main>
+            </div>
+          </div>
+        </Show>
+      </div>
+    </div>
   );
 };
 

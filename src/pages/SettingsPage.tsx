@@ -6,10 +6,13 @@ const SettingsPage: Component = () => {
   const [showDevTools, setShowDevTools] = createSignal(false);
 
   return (
-    <main class="container mx-auto p-8 max-w-6xl">
-      <h1 class="text-3xl font-bold mb-6">Settings</h1>
+    <div class="h-full flex flex-col">
+      <div class="flex-none bg-base-200/50 px-8 py-6 border-b border-base-300">
+        <h1 class="text-3xl font-bold">Settings</h1>
+      </div>
 
-      <div class="space-y-6">
+      <div class="flex-1 overflow-y-auto px-8 py-6">
+        <div class="max-w-4xl mx-auto space-y-6">
         <div class="card bg-base-200 shadow-xl">
           <div class="card-body">
             <h2 class="card-title">Appearance</h2>
@@ -42,8 +45,9 @@ const SettingsPage: Component = () => {
             )}
           </div>
         </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 };
 

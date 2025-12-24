@@ -183,9 +183,9 @@ function HomePage() {
   };
 
   return (
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="h-full flex items-center justify-center p-4">
       <div class="card bg-base-200/50 backdrop-blur-sm shadow-2xl w-full max-w-lg">
-        <div class="card-body p-8 gap-6">
+        <div class="card-body p-6 gap-4">
           {/* Mode Selection Tabs */}
           <div class="flex justify-center gap-2">
             <button
@@ -209,8 +209,8 @@ function HomePage() {
           </div>
 
           {/* Massive Timer Display */}
-          <div class="text-center py-8">
-            <div class="text-9xl font-bold tabular-nums tracking-tight">
+          <div class="text-center py-6">
+            <div class="text-8xl font-bold tabular-nums tracking-tight">
               {formatTime(timeLeft())}
             </div>
           </div>
