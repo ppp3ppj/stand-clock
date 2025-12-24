@@ -7,11 +7,12 @@ interface TimelineEntry {
   type: TimerMode;
   sessionNumber?: number;
   status: 'completed' | 'current' | 'upcoming';
+  skipped?: boolean;
 }
 
 const TimelinePage: Component = () => {
   const { settings } = useTimerSettings();
-  const { mode, sessionCount } = useTimer();
+  const { mode, sessionCount, sessionHistory } = useTimer();
 
   // Generate timeline entries based on current session and mode
   const timeline = createMemo((): TimelineEntry[] => {
@@ -19,28 +20,39 @@ const TimelinePage: Component = () => {
     const sessionsBeforeLongBreak = settings().sessionsBeforeLongBreak;
     const currentSessionNumber = sessionCount();
     const currentMode = mode();
+    const history = sessionHistory();
+
+    // Helper to check if a session was skipped
+    const wasSkipped = (sessionNum: number, type: TimerMode): boolean => {
+      const entry = history.find(
+        h => h.sessionNumber === sessionNum && h.type === type
+      );
+      return entry?.skipped ?? false;
+    };
 
     // Add completed sessions
     for (let i = 1; i <= currentSessionNumber; i++) {
+      const pomodoroSkipped = wasSkipped(i, 'pomodoro');
+
       entries.push({
         id: `pomodoro-${i}`,
         type: 'pomodoro',
         sessionNumber: i,
         status: 'completed',
+        skipped: pomodoroSkipped,
       });
 
-      // Add break after each completed pomodoro
-      if (i % sessionsBeforeLongBreak === 0) {
+      // Add break after each completed pomodoro (only if there's a history entry for it)
+      const breakType: TimerMode = i % sessionsBeforeLongBreak === 0 ? 'longBreak' : 'shortBreak';
+      const breakHistory = history.find(h => h.sessionNumber === i && h.type === breakType);
+
+      // Only show break if it was actually recorded in history
+      if (breakHistory) {
         entries.push({
-          id: `long-break-${i}`,
-          type: 'longBreak',
+          id: `${breakType}-${i}`,
+          type: breakType,
           status: 'completed',
-        });
-      } else {
-        entries.push({
-          id: `short-break-${i}`,
-          type: 'shortBreak',
-          status: 'completed',
+          skipped: breakHistory.skipped,
         });
       }
     }
@@ -62,45 +74,41 @@ const TimelinePage: Component = () => {
       });
     }
 
-    // Add upcoming sessions (next 3)
-    const upcomingSessions = 3;
-    const nextPomodoroSession = currentMode === 'pomodoro' ? currentSessionNumber + 2 : currentSessionNumber + 1;
+    // Add upcoming sessions (next 3 work sessions)
+    const upcomingWorkSessions = 3;
 
-    for (let i = 0; i < upcomingSessions; i++) {
-      const sessionNum = nextPomodoroSession + i;
+    // Start from the next pomodoro session number
+    let nextPomodoroNum = currentMode === 'pomodoro' ? currentSessionNumber + 2 : currentSessionNumber + 1;
 
-      // If currently on a break, add the upcoming pomodoro first
-      if (currentMode !== 'pomodoro' && i === 0) {
+    for (let i = 0; i < upcomingWorkSessions; i++) {
+      const pomodoroNum = nextPomodoroNum + i;
+
+      // Add upcoming break first (for the session before this one)
+      if (i === 0 && currentMode !== 'pomodoro') {
+        // If we're on a break, the first entry should be the next pomodoro
         entries.push({
-          id: `pomodoro-${sessionNum}`,
+          id: `pomodoro-${pomodoroNum}`,
           type: 'pomodoro',
-          sessionNumber: sessionNum,
-          status: 'upcoming',
-        });
-      }
-
-      // Add upcoming break
-      const completedAfterThis = currentMode === 'pomodoro' ? sessionNum : sessionNum;
-      if (completedAfterThis % sessionsBeforeLongBreak === 0) {
-        entries.push({
-          id: `long-break-upcoming-${sessionNum}`,
-          type: 'longBreak',
+          sessionNumber: pomodoroNum,
           status: 'upcoming',
         });
       } else {
-        entries.push({
-          id: `short-break-upcoming-${sessionNum}`,
-          type: 'shortBreak',
-          status: 'upcoming',
-        });
-      }
+        // Add the break that comes after the previous session
+        const previousSessionNum = pomodoroNum - 1;
+        if (previousSessionNum > currentSessionNumber || currentMode !== 'pomodoro') {
+          const breakType: TimerMode = previousSessionNum % sessionsBeforeLongBreak === 0 ? 'longBreak' : 'shortBreak';
+          entries.push({
+            id: `${breakType}-upcoming-${previousSessionNum}`,
+            type: breakType,
+            status: 'upcoming',
+          });
+        }
 
-      // Add upcoming pomodoro (except for first iteration when on break)
-      if (!(currentMode !== 'pomodoro' && i === 0)) {
+        // Add the pomodoro session
         entries.push({
-          id: `pomodoro-${sessionNum + 1}`,
+          id: `pomodoro-${pomodoroNum}`,
           type: 'pomodoro',
-          sessionNumber: sessionNum + 1,
+          sessionNumber: pomodoroNum,
           status: 'upcoming',
         });
       }
@@ -153,25 +161,37 @@ const TimelinePage: Component = () => {
     }
   };
 
-  const getStatusStyles = (status: TimelineEntry['status']) => {
+  const getStatusStyles = (status: TimelineEntry['status'], skipped?: boolean) => {
+    if (skipped) {
+      return {
+        opacity: 'opacity-40',
+        badge: 'badge-error',
+        icon: 'ri-skip-forward-line',
+        label: 'skipped',
+      };
+    }
+
     switch (status) {
       case 'completed':
         return {
           opacity: 'opacity-50',
           badge: 'badge-success',
           icon: 'ri-check-line',
+          label: 'completed',
         };
       case 'current':
         return {
           opacity: 'opacity-100',
           badge: 'badge-warning',
           icon: 'ri-play-circle-line',
+          label: 'current',
         };
       case 'upcoming':
         return {
           opacity: 'opacity-30',
           badge: 'badge-ghost',
           icon: 'ri-time-line',
+          label: 'upcoming',
         };
     }
   };
@@ -189,7 +209,7 @@ const TimelinePage: Component = () => {
         <div class="w-full max-w-2xl mx-auto">
           <For each={timeline()}>
             {(entry, index) => {
-              const statusStyles = getStatusStyles(entry.status);
+              const statusStyles = getStatusStyles(entry.status, entry.skipped);
               const color = getTypeColor(entry.type);
               const isLast = index() === timeline().length - 1;
 
@@ -199,7 +219,11 @@ const TimelinePage: Component = () => {
                   {!isLast && (
                     <div
                       class={`absolute left-6 top-12 bottom-0 w-1 ${
-                        entry.status === 'completed' ? `bg-${color}` : 'bg-base-300'
+                        entry.skipped
+                          ? 'bg-error/30'
+                          : entry.status === 'completed'
+                          ? `bg-${color}`
+                          : 'bg-base-300'
                       } ${statusStyles.opacity}`}
                     />
                   )}
@@ -207,11 +231,15 @@ const TimelinePage: Component = () => {
                   {/* Icon Circle */}
                   <div class="flex-none">
                     <div
-                      class={`w-12 h-12 rounded-full bg-${color} flex items-center justify-center ${statusStyles.opacity} relative z-10 ${
+                      class={`w-12 h-12 rounded-full ${
+                        entry.skipped ? 'bg-error' : `bg-${color}`
+                      } flex items-center justify-center ${statusStyles.opacity} relative z-10 ${
                         entry.status === 'current' ? 'ring-4 ring-warning ring-offset-2 ring-offset-base-100' : ''
                       }`}
                     >
-                      <i class={`${getTypeIcon(entry.type)} text-xl text-${color}-content`}></i>
+                      <i class={`${
+                        entry.skipped ? 'ri-skip-forward-line' : getTypeIcon(entry.type)
+                      } text-xl ${entry.skipped ? 'text-error-content' : `text-${color}-content`}`}></i>
                     </div>
                   </div>
 
@@ -226,11 +254,12 @@ const TimelinePage: Component = () => {
                           </h3>
                           <span class={`badge ${statusStyles.badge} badge-sm gap-1`}>
                             <i class={`${statusStyles.icon} text-xs`}></i>
-                            {entry.status}
+                            {statusStyles.label}
                           </span>
                         </div>
                         <div class="text-sm opacity-70">
                           Duration: {getTypeDuration(entry.type)}
+                          {entry.skipped && <span class="text-error ml-2">(Not completed)</span>}
                         </div>
                         {entry.status === 'current' && (
                           <div class="mt-2">

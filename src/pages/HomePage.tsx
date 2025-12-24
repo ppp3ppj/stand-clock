@@ -7,7 +7,7 @@ import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
 
 function HomePage() {
   const { settings } = useTimerSettings();
-  const { mode, setMode, timeLeft, setTimeLeft, isRunning, setIsRunning, sessionCount, setSessionCount } = useTimer();
+  const { mode, setMode, timeLeft, setTimeLeft, isRunning, setIsRunning, sessionCount, setSessionCount, addSessionHistory } = useTimer();
 
   let intervalId: number | null = null;
 
@@ -89,6 +89,15 @@ function HomePage() {
                 const newSessionCount = sessionCount() + 1;
                 setSessionCount(newSessionCount);
 
+                // Record completed pomodoro session
+                addSessionHistory({
+                  sessionNumber: newSessionCount,
+                  type: "pomodoro",
+                  completed: true,
+                  skipped: false,
+                  timestamp: new Date(),
+                });
+
                 // Auto-switch to break after state updates
                 if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
                   switchMode("longBreak");
@@ -96,6 +105,15 @@ function HomePage() {
                   switchMode("shortBreak");
                 }
               } else {
+                // Record completed break
+                addSessionHistory({
+                  sessionNumber: sessionCount(),
+                  type: mode(),
+                  completed: true,
+                  skipped: false,
+                  timestamp: new Date(),
+                });
+
                 // Break finished, switch back to pomodoro
                 switchMode("pomodoro");
               }
@@ -143,9 +161,18 @@ function HomePage() {
     setIsRunning(false);
 
     if (mode() === "pomodoro") {
-      // Complete the pomodoro session and move to break
+      // Skip the pomodoro session and move to break
       const newSessionCount = sessionCount() + 1;
       setSessionCount(newSessionCount);
+
+      // Record skipped pomodoro session
+      addSessionHistory({
+        sessionNumber: newSessionCount,
+        type: "pomodoro",
+        completed: false,
+        skipped: true,
+        timestamp: new Date(),
+      });
 
       if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
         switchMode("longBreak");
@@ -153,6 +180,15 @@ function HomePage() {
         switchMode("shortBreak");
       }
     } else {
+      // Record skipped break
+      addSessionHistory({
+        sessionNumber: sessionCount(),
+        type: mode(),
+        completed: false,
+        skipped: true,
+        timestamp: new Date(),
+      });
+
       // From break, go back to pomodoro
       switchMode("pomodoro");
     }
