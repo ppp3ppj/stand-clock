@@ -86,6 +86,21 @@ pub fn run() {
             INSERT OR IGNORE INTO streak_info (id, current_streak, longest_streak) VALUES (1, 0, 0);
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 4,
+            description: "add timer settings snapshot to sessions table",
+            sql: "ALTER TABLE sessions ADD COLUMN work_duration INTEGER;
+            ALTER TABLE sessions ADD COLUMN short_break_duration INTEGER;
+            ALTER TABLE sessions ADD COLUMN long_break_duration INTEGER;
+            ALTER TABLE sessions ADD COLUMN sessions_before_long_break INTEGER;
+            CREATE INDEX IF NOT EXISTS idx_sessions_settings ON sessions(
+                work_duration,
+                short_break_duration,
+                long_break_duration,
+                sessions_before_long_break
+            );",
+            kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()

@@ -1,5 +1,6 @@
 import { Component, For, Show } from "solid-js";
 import { Session } from "../repositories/SessionTrackingRepository";
+import SettingsBadge from "./SettingsBadge";
 
 interface SessionTimelineProps {
   sessions: Session[];
@@ -145,6 +146,24 @@ const SessionTimeline: Component<SessionTimelineProps> = (props) => {
                               </span>
                             )}
                           </div>
+                        </Show>
+
+                        {/* Settings snapshot */}
+                        <Show when={session.workDuration}>
+                          <div class="mt-2">
+                            <SettingsBadge
+                              workDuration={session.workDuration!}
+                              shortBreakDuration={session.shortBreakDuration!}
+                              longBreakDuration={session.longBreakDuration!}
+                              size="sm"
+                              showLabel={true}
+                            />
+                          </div>
+                        </Show>
+
+                        {/* Legacy session indicator */}
+                        <Show when={!session.workDuration}>
+                          <div class="badge badge-ghost badge-sm mt-2">Legacy Session</div>
                         </Show>
                       </div>
 

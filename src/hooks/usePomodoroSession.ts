@@ -7,6 +7,7 @@ import { createSignal, createEffect, onMount, onCleanup } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import { useSessionTracking } from "../contexts/SessionTrackingContext";
 import { minutesToSeconds } from "../utils/timeUtils";
+import type { SessionSettingsSnapshot } from "../repositories/SessionTrackingRepository";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -134,8 +135,16 @@ export function usePomodoroSession(
       // Start
       setIsRunning(true);
       setHasSessionStarted(true);
-      
-      trackStartSession(mode(), getDuration(mode()));
+
+      // Create settings snapshot
+      const settingsSnapshot: SessionSettingsSnapshot = {
+        workDuration: settings().workDuration,
+        shortBreakDuration: settings().shortBreakDuration,
+        longBreakDuration: settings().longBreakDuration,
+        sessionsBeforeLongBreak: settings().sessionsBeforeLongBreak,
+      };
+
+      trackStartSession(mode(), getDuration(mode()), settingsSnapshot);
 
       if (mode() !== "pomodoro") {
         setShowBreakActivitySelector(true);

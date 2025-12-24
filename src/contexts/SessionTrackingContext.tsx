@@ -7,7 +7,7 @@
 import { createContext, useContext, createSignal, onMount, onCleanup, ParentComponent } from "solid-js";
 import { IUnitOfWork } from "../repositories/IUnitOfWork";
 import { createUnitOfWork } from "../repositories/SqliteUnitOfWork";
-import { Session, DailyStats, StreakInfo, DEFAULT_DAILY_STATS } from "../repositories/SessionTrackingRepository";
+import { Session, DailyStats, StreakInfo, DEFAULT_DAILY_STATS, SessionSettingsSnapshot } from "../repositories/SessionTrackingRepository";
 import { getTodayDateString, calculateDuration } from "../utils/dateUtils";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
@@ -16,12 +16,13 @@ interface ActiveSession {
   type: TimerMode;
   plannedDuration: number;  // in seconds
   startedAt: Date;
+  settingsSnapshot: SessionSettingsSnapshot;
 }
 
 interface SessionTrackingContextValue {
   // Active session
   activeSession: () => ActiveSession | null;
-  startSession: (type: TimerMode, plannedDuration: number) => void;
+  startSession: (type: TimerMode, plannedDuration: number, settingsSnapshot: SessionSettingsSnapshot) => void;
   completeSession: () => Promise<void>;
   skipSession: () => Promise<void>;
   abandonSession: () => Promise<void>;
@@ -47,6 +48,10 @@ interface SessionTrackingContextValue {
   streakInfo: () => StreakInfo;
   refreshTodayStats: () => Promise<void>;
   refreshStreak: () => Promise<void>;
+
+  // Settings tracking
+  sessionsWithCurrentSettings: () => number;
+  refreshSessionsCount: () => Promise<void>;
 
   isLoading: () => boolean;
   error: () => string | null;
@@ -86,11 +91,12 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
   const [isTimerRunning, setIsTimerRunning] = createSignal(false);
   const [sessionCount, setSessionCount] = createSignal(0);
   const [wasRunningBeforeLeave, setWasRunningBeforeLeave] = createSignal(false);
+  const [sessionsWithCurrentSettings, setSessionsWithCurrentSettings] = createSignal(0);
 
   // Load initial data on mount
   onMount(async () => {
     try {
-      await Promise.all([refreshTodayStats(), refreshStreak()]);
+      await Promise.all([refreshTodayStats(), refreshStreak(), refreshSessionsCount()]);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load initial data";
@@ -110,11 +116,12 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     }
   });
 
-  const startSession = (type: TimerMode, plannedDuration: number) => {
+  const startSession = (type: TimerMode, plannedDuration: number, settingsSnapshot: SessionSettingsSnapshot) => {
     setActiveSession({
       type,
       plannedDuration,
       startedAt: new Date(),
+      settingsSnapshot,
     });
 
     // Reset break activity when starting a new break session
@@ -145,13 +152,17 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
         completedAt,
         date: getTodayDateString(),
         breakActivity: session.type !== 'pomodoro' ? breakActivity() || undefined : undefined,
+        workDuration: session.settingsSnapshot.workDuration,
+        shortBreakDuration: session.settingsSnapshot.shortBreakDuration,
+        longBreakDuration: session.settingsSnapshot.longBreakDuration,
+        sessionsBeforeLongBreak: session.settingsSnapshot.sessionsBeforeLongBreak,
       };
 
       await unitOfWork.sessionTracking.recordSession(sessionRecord);
       setActiveSession(null);
 
       // Refresh stats after recording
-      await Promise.all([refreshTodayStats(), refreshStreak()]);
+      await Promise.all([refreshTodayStats(), refreshStreak(), refreshSessionsCount()]);
       setError(null);
 
       console.log("[SessionTrackingContext] Session completed and recorded");
@@ -183,6 +194,10 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
         completedAt,
         date: getTodayDateString(),
         breakActivity: session.type !== 'pomodoro' ? breakActivity() || undefined : undefined,
+        workDuration: session.settingsSnapshot.workDuration,
+        shortBreakDuration: session.settingsSnapshot.shortBreakDuration,
+        longBreakDuration: session.settingsSnapshot.longBreakDuration,
+        sessionsBeforeLongBreak: session.settingsSnapshot.sessionsBeforeLongBreak,
       };
 
       await unitOfWork.sessionTracking.recordSession(sessionRecord);
@@ -220,6 +235,10 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
         startedAt: session.startedAt,
         completedAt,
         date: getTodayDateString(),
+        workDuration: session.settingsSnapshot.workDuration,
+        shortBreakDuration: session.settingsSnapshot.shortBreakDuration,
+        longBreakDuration: session.settingsSnapshot.longBreakDuration,
+        sessionsBeforeLongBreak: session.settingsSnapshot.sessionsBeforeLongBreak,
       };
 
       await unitOfWork.sessionTracking.recordSession(sessionRecord);
@@ -269,6 +288,25 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     }
   };
 
+  const refreshSessionsCount = async () => {
+    try {
+      const settings = await unitOfWork.timerSettings.load();
+      const snapshot: SessionSettingsSnapshot = {
+        workDuration: settings.workDuration,
+        shortBreakDuration: settings.shortBreakDuration,
+        longBreakDuration: settings.longBreakDuration,
+        sessionsBeforeLongBreak: settings.sessionsBeforeLongBreak,
+      };
+      const count = await unitOfWork.sessionTracking.getSessionsCountForCurrentSettings(snapshot);
+      setSessionsWithCurrentSettings(count);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to refresh sessions count";
+      console.error("[SessionTrackingContext] " + errorMessage, err);
+      setError(errorMessage);
+    }
+  };
+
   const value: SessionTrackingContextValue = {
     activeSession,
     startSession,
@@ -291,6 +329,8 @@ export const SessionTrackingProvider: ParentComponent<SessionTrackingProviderPro
     streakInfo,
     refreshTodayStats,
     refreshStreak,
+    sessionsWithCurrentSettings,
+    refreshSessionsCount,
     isLoading,
     error,
   };

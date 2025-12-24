@@ -5,6 +5,10 @@
 
 import { Component, Show } from "solid-js";
 import { DailyStats } from "../repositories/SessionTrackingRepository";
+import SettingsBadge from "./SettingsBadge";
+import SessionCountBadge from "./SessionCountBadge";
+import { useTimerSettings } from "../contexts/TimerSettingsContext";
+import { useSessionTracking } from "../contexts/SessionTrackingContext";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -16,9 +20,8 @@ interface SessionInfoProps {
 }
 
 const SessionInfo: Component<SessionInfoProps> = (props) => {
-  const sessionsUntilBreak = () => {
-    return props.sessionsBeforeLongBreak - (props.sessionCount % props.sessionsBeforeLongBreak);
-  };
+  const { settings } = useTimerSettings();
+  const { sessionsWithCurrentSettings } = useSessionTracking();
 
   return (
     <Show
@@ -32,25 +35,28 @@ const SessionInfo: Component<SessionInfoProps> = (props) => {
         </div>
       }
     >
-      <div class="flex justify-center items-center gap-4 text-center">
-        <div>
-          <div class="text-xs opacity-60 uppercase">Session</div>
-          <div class="text-2xl font-bold text-primary">#{props.sessionCount + 1}</div>
-        </div>
-        <div class="divider divider-horizontal m-0" />
-        <div>
-          <div class="text-xs opacity-60 uppercase">This Session</div>
-          <div class="text-2xl font-bold text-primary">{props.sessionCount}</div>
-        </div>
-        <div class="divider divider-horizontal m-0" />
-        <div>
-          <div class="text-xs opacity-60 uppercase">Today</div>
-          <div class="text-2xl font-bold text-primary">{props.todayStats.workSessionsCompleted}</div>
-        </div>
-        <div class="divider divider-horizontal m-0" />
-        <div>
-          <div class="text-xs opacity-60 uppercase">Until Break</div>
-          <div class="text-2xl font-bold text-primary">{sessionsUntilBreak()}</div>
+      <div class="flex flex-col gap-3 items-center">
+        <SessionCountBadge
+          currentSession={props.sessionCount}
+          sessionsBeforeLongBreak={props.sessionsBeforeLongBreak}
+          totalCompletedWithSettings={sessionsWithCurrentSettings()}
+        />
+
+        <SettingsBadge
+          workDuration={settings().workDuration}
+          shortBreakDuration={settings().shortBreakDuration}
+          longBreakDuration={settings().longBreakDuration}
+        />
+
+        <div class="stats stats-horizontal shadow">
+          <div class="stat py-2 px-4">
+            <div class="stat-title text-xs">Session</div>
+            <div class="stat-value text-2xl text-primary">#{props.sessionCount + 1}</div>
+          </div>
+          <div class="stat py-2 px-4">
+            <div class="stat-title text-xs">Today</div>
+            <div class="stat-value text-2xl text-primary">{props.todayStats.workSessionsCompleted}</div>
+          </div>
         </div>
       </div>
     </Show>

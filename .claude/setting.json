@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "defaultMode": "ask",
+    "allow": {
+      "Bash": ["git status", "git diff", "git log", "bun run*"],
+      "Read": {},
+      "Edit": {}
+    },
+    "deny": {
+      "Write": ["*.env", ".env.*", ".git/*"],
+      "Edit": ["*.env", ".env.*"]
+    }
+  }
+}

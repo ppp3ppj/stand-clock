@@ -10,6 +10,18 @@ export interface Session {
   completedAt: Date;
   date: string;  // YYYY-MM-DD
   breakActivity?: string;
+  // Settings snapshot - what settings were active when this session ran
+  workDuration?: number;         // in minutes
+  shortBreakDuration?: number;   // in minutes
+  longBreakDuration?: number;    // in minutes
+  sessionsBeforeLongBreak?: number;
+}
+
+export interface SessionSettingsSnapshot {
+  workDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  sessionsBeforeLongBreak: number;
 }
 
 export interface DailyStats {
@@ -93,6 +105,26 @@ export interface ISessionTrackingRepository {
    * Get individual sessions for a specific date (for timeline view)
    */
   getSessionsForDate(date: string): Promise<Session[]>;
+
+  /**
+   * Count sessions completed under current settings
+   */
+  getSessionsCountForCurrentSettings(settings: SessionSettingsSnapshot): Promise<number>;
+
+  /**
+   * Get aggregated stats for a specific settings configuration
+   */
+  getStatsForSettings(
+    workDuration: number,
+    shortBreakDuration: number,
+    longBreakDuration: number,
+    sessionsBeforeLongBreak: number
+  ): Promise<{
+    totalSessions: number;
+    completedSessions: number;
+    averageCompletionRate: number;
+    totalWorkTime: number;
+  }>;
 }
 
 /**
@@ -109,8 +141,9 @@ export class SqliteSessionTrackingRepository implements ISessionTrackingReposito
       await db.execute(
         `INSERT INTO sessions (
           session_type, status, planned_duration, actual_duration,
-          started_at, completed_at, date, break_activity
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          started_at, completed_at, date, break_activity,
+          work_duration, short_break_duration, long_break_duration, sessions_before_long_break
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           session.sessionType,
           session.status,
@@ -120,6 +153,10 @@ export class SqliteSessionTrackingRepository implements ISessionTrackingReposito
           session.completedAt.toISOString(),
           session.date,
           session.breakActivity || null,
+          session.workDuration || null,
+          session.shortBreakDuration || null,
+          session.longBreakDuration || null,
+          session.sessionsBeforeLongBreak || null,
         ]
       );
 
@@ -245,6 +282,10 @@ export class SqliteSessionTrackingRepository implements ISessionTrackingReposito
         completed_at: string;
         date: string;
         break_activity: string | null;
+        work_duration: number | null;
+        short_break_duration: number | null;
+        long_break_duration: number | null;
+        sessions_before_long_break: number | null;
       }>>(
         "SELECT * FROM sessions WHERE date = $1 ORDER BY started_at ASC",
         [date]
@@ -260,6 +301,10 @@ export class SqliteSessionTrackingRepository implements ISessionTrackingReposito
         completedAt: new Date(row.completed_at),
         date: row.date,
         breakActivity: row.break_activity || undefined,
+        workDuration: row.work_duration || undefined,
+        shortBreakDuration: row.short_break_duration || undefined,
+        longBreakDuration: row.long_break_duration || undefined,
+        sessionsBeforeLongBreak: row.sessions_before_long_break || undefined,
       }));
     } catch (error) {
       console.error('[SqliteSessionTrackingRepository] Failed to get sessions for date:', error);
@@ -478,5 +523,59 @@ export class SqliteSessionTrackingRepository implements ISessionTrackingReposito
       completionRate: row.completion_rate,
       focusScore: row.focus_score,
     };
+  }
+
+  async getSessionsCountForCurrentSettings(settings: SessionSettingsSnapshot): Promise<number> {
+    try {
+      const db = await this.unitOfWork.getDatabase();
+      const result = await db.select<Array<{ count: number }>>(
+        `SELECT COUNT(*) as count FROM sessions
+         WHERE work_duration = $1 AND short_break_duration = $2
+           AND long_break_duration = $3 AND sessions_before_long_break = $4
+           AND status = 'completed' AND session_type = 'pomodoro'`,
+        [settings.workDuration, settings.shortBreakDuration,
+         settings.longBreakDuration, settings.sessionsBeforeLongBreak]
+      );
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('[SqliteSessionTrackingRepository] Failed to get sessions count for current settings:', error);
+      return 0;
+    }
+  }
+
+  async getStatsForSettings(
+    workDuration: number,
+    shortBreakDuration: number,
+    longBreakDuration: number,
+    sessionsBeforeLongBreak: number
+  ): Promise<{ totalSessions: number; completedSessions: number; averageCompletionRate: number; totalWorkTime: number; }> {
+    try {
+      const db = await this.unitOfWork.getDatabase();
+      const result = await db.select<Array<{
+        total: number;
+        completed: number;
+        total_time: number;
+      }>>(
+        `SELECT COUNT(*) as total,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+          SUM(CASE WHEN status = 'completed' AND session_type = 'pomodoro'
+              THEN actual_duration ELSE 0 END) as total_time
+        FROM sessions
+        WHERE work_duration = $1 AND short_break_duration = $2
+          AND long_break_duration = $3 AND sessions_before_long_break = $4`,
+        [workDuration, shortBreakDuration, longBreakDuration, sessionsBeforeLongBreak]
+      );
+
+      const row = result[0] || { total: 0, completed: 0, total_time: 0 };
+      return {
+        totalSessions: row.total,
+        completedSessions: row.completed,
+        averageCompletionRate: row.total > 0 ? (row.completed / row.total) * 100 : 0,
+        totalWorkTime: row.total_time || 0,
+      };
+    } catch (error) {
+      console.error('[SqliteSessionTrackingRepository] Failed to get stats for settings:', error);
+      return { totalSessions: 0, completedSessions: 0, averageCompletionRate: 0, totalWorkTime: 0 };
+    }
   }
 }

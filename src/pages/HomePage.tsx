@@ -4,6 +4,7 @@
  * Refactored following OOP, DRY, and clean code principles
  */
 
+import { createSignal, createEffect } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import { useSessionTracking } from "../contexts/SessionTrackingContext";
 import { usePomodoroSession } from "../hooks/usePomodoroSession";
@@ -14,16 +15,54 @@ import TimerDisplay from "../components/TimerDisplay";
 import TimerControls from "../components/TimerControls";
 import SessionInfo from "../components/SessionInfo";
 import StreakBadge from "../components/StreakBadge";
+import SettingsChangeAlert from "../components/SettingsChangeAlert";
 
 function HomePage() {
   const { settings } = useTimerSettings();
   const { todayStats, streakInfo } = useSessionTracking();
-  
+
   // Initialize sound effects
   const { playClick, playNotification, playPopAlert } = useSoundEffects(() => settings().soundEnabled);
-  
+
   // Initialize pomodoro session management
   const session = usePomodoroSession(playNotification, playPopAlert);
+
+  // Settings change tracking
+  const [hasSettingsChanged, setHasSettingsChanged] = createSignal(false);
+  const [lastSessionSettings, setLastSessionSettings] = createSignal<{
+    workDuration: number;
+    shortBreakDuration: number;
+    longBreakDuration: number;
+    sessionsBeforeLongBreak: number;
+  } | null>(null);
+
+  // Detect settings changes
+  createEffect(() => {
+    const current = settings();
+    const last = lastSessionSettings();
+
+    if (last && (
+      last.workDuration !== current.workDuration ||
+      last.shortBreakDuration !== current.shortBreakDuration ||
+      last.longBreakDuration !== current.longBreakDuration ||
+      last.sessionsBeforeLongBreak !== current.sessionsBeforeLongBreak
+    )) {
+      setHasSettingsChanged(true);
+    }
+  });
+
+  // When session starts, save settings as last used
+  createEffect(() => {
+    if (session.isRunning() && session.hasSessionStarted()) {
+      setLastSessionSettings({
+        workDuration: settings().workDuration,
+        shortBreakDuration: settings().shortBreakDuration,
+        longBreakDuration: settings().longBreakDuration,
+        sessionsBeforeLongBreak: settings().sessionsBeforeLongBreak,
+      });
+      setHasSettingsChanged(false);
+    }
+  });
 
   // Wrapper functions to add sound effects
   const handleToggle = () => {
@@ -58,6 +97,9 @@ function HomePage() {
         <StreakBadge streakInfo={streakInfo()} />
 
         <div class="card-body p-8 gap-6">
+          {/* Settings Change Alert */}
+          <SettingsChangeAlert hasSettingsChanged={hasSettingsChanged()} />
+
           {/* Mode Selection Tabs */}
           <ModeSelector
             currentMode={session.mode()}

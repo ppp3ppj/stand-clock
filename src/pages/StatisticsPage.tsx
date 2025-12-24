@@ -16,6 +16,7 @@ import {
 } from "../components/StatisticsCards";
 import { BreakActivitiesCard } from "../components/BreakActivitiesCard";
 import { TimerRunningAlert } from "../components/TimerRunningAlert";
+import SettingsComparisonView from "../components/SettingsComparisonView";
 
 function StatisticsPage() {
   const {
@@ -25,7 +26,7 @@ function StatisticsPage() {
   } = useSessionTracking();
 
   const { weeklyStats, allTimeStats, todaySessions, isLoading } = useStatistics();
-  const [activeTab, setActiveTab] = createSignal<"overview" | "timeline">("overview");
+  const [activeTab, setActiveTab] = createSignal<"overview" | "timeline" | "settings">("overview");
 
   // Refresh data on mount (already handled in hooks)
   // The useStatistics hook handles loading on mount
@@ -52,6 +53,13 @@ function StatisticsPage() {
           >
             <i class="ri-time-line mr-2"></i>
             Timeline
+          </button>
+          <button
+            class={`tab ${activeTab() === "settings" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("settings")}
+          >
+            <i class="ri-settings-3-line mr-2"></i>
+            By Settings
           </button>
         </div>
       </div>
@@ -93,6 +101,11 @@ function StatisticsPage() {
 
           {/* All-Time Stats */}
           <AllTimeStatsCard allTimeStats={allTimeStats()} streakInfo={streakInfo()} />
+        </Show>
+
+        {/* By Settings Tab */}
+        <Show when={activeTab() === "settings"}>
+          <SettingsComparisonView />
         </Show>
       </Show>
     </div>
