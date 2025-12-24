@@ -25,6 +25,8 @@ const Layout: ParentComponent = (props) => {
             href="/"
             class="btn btn-ghost btn-square btn-lg flex flex-col gap-1 h-auto py-3"
             activeClass="btn-primary"
+            inactiveClass="btn-ghost"
+            end
             title="Timer"
           >
             <i class="ri-timer-line text-2xl"></i>
@@ -33,8 +35,9 @@ const Layout: ParentComponent = (props) => {
 
           <A
             href="/timer-settings"
-            class="btn btn-ghost btn-square btn-lg flex flex-col gap-1 h-auto py-3"
+            class="btn btn-square btn-lg flex flex-col gap-1 h-auto py-3"
             activeClass="btn-primary"
+            inactiveClass="btn-ghost"
             title="Timer Settings"
           >
             <i class="ri-settings-4-line text-2xl"></i>
@@ -43,8 +46,9 @@ const Layout: ParentComponent = (props) => {
 
           <A
             href="/settings"
-            class="btn btn-ghost btn-square btn-lg flex flex-col gap-1 h-auto py-3"
+            class="btn btn-square btn-lg flex flex-col gap-1 h-auto py-3"
             activeClass="btn-primary"
+            inactiveClass="btn-ghost"
             title="Settings"
           >
             <i class="ri-palette-line text-2xl"></i>
