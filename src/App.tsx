@@ -14,10 +14,12 @@ const Layout: ParentComponent = (props) => {
         </div>
         <div class="flex-none gap-2">
           <A href="/timer-settings" class="btn btn-ghost">
+            <i class="ri-timer-line text-lg"></i>
             Timer
           </A>
           <A href="/settings" class="btn btn-ghost">
-            Theme
+            <i class="ri-settings-3-line text-lg"></i>
+            Settings
           </A>
         </div>
       </nav>

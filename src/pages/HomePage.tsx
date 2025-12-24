@@ -43,9 +43,9 @@ function HomePage() {
   // Initialize timer with current mode duration
   const initializeTimer = (selectedMode: TimerMode) => {
     const durations = {
-      pomodoro: settings().workDuration * 60,
-      shortBreak: settings().shortBreakDuration * 60,
-      longBreak: settings().longBreakDuration * 60,
+      pomodoro: Math.round(settings().workDuration * 60),
+      shortBreak: Math.round(settings().shortBreakDuration * 60),
+      longBreak: Math.round(settings().longBreakDuration * 60),
     };
     setTimeLeft(durations[selectedMode]);
     setIsRunning(false);
@@ -56,8 +56,9 @@ function HomePage() {
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const totalSeconds = Math.round(seconds);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
@@ -88,18 +89,23 @@ function HomePage() {
             // Play notification sound
             playNotificationSound();
 
-            // Handle session completion
-            if (mode() === "pomodoro") {
-              const newSessionCount = sessionCount() + 1;
-              setSessionCount(newSessionCount);
+            // Handle session completion - use setTimeout to ensure state updates complete
+            setTimeout(() => {
+              if (mode() === "pomodoro") {
+                const newSessionCount = sessionCount() + 1;
+                setSessionCount(newSessionCount);
 
-              // Auto-switch to break
-              if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
-                switchMode("longBreak");
+                // Auto-switch to break after state updates
+                if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
+                  switchMode("longBreak");
+                } else {
+                  switchMode("shortBreak");
+                }
               } else {
-                switchMode("shortBreak");
+                // Break finished, switch back to pomodoro
+                switchMode("pomodoro");
               }
-            }
+            }, 0);
 
             return 0;
           }
@@ -168,9 +174,9 @@ function HomePage() {
   // Calculate progress percentage
   const getProgress = () => {
     const durations = {
-      pomodoro: settings().workDuration * 60,
-      shortBreak: settings().shortBreakDuration * 60,
-      longBreak: settings().longBreakDuration * 60,
+      pomodoro: Math.round(settings().workDuration * 60),
+      shortBreak: Math.round(settings().shortBreakDuration * 60),
+      longBreak: Math.round(settings().longBreakDuration * 60),
     };
     const total = durations[mode()];
     return total > 0 ? ((total - timeLeft()) / total) * 100 : 0;
