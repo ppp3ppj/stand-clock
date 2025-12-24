@@ -19,7 +19,7 @@ const Layout: ParentComponent = (props) => {
           <i class="ri-time-line text-xl text-primary-content"></i>
         </A>
 
-        <div class="divider my-0 w-8"></div>
+        <div class="divider my-2 w-full px-2"></div>
 
         {/* Navigation Icons - Icon Only */}
         <nav class="flex flex-col gap-3 flex-1">
