@@ -183,9 +183,9 @@ function HomePage() {
   };
 
   return (
-    <div class="h-full flex items-center justify-center p-4">
+    <div class="h-full flex items-center justify-center p-2 sm:p-4">
       <div class="card bg-base-200/50 backdrop-blur-sm shadow-2xl w-full max-w-lg">
-        <div class="card-body p-6 gap-4">
+        <div class="card-body p-4 sm:p-6 gap-3 sm:gap-4">
           {/* Mode Selection Tabs */}
           <div class="flex justify-center gap-2">
             <button
@@ -209,8 +209,8 @@ function HomePage() {
           </div>
 
           {/* Massive Timer Display */}
-          <div class="text-center py-6">
-            <div class="text-8xl font-bold tabular-nums tracking-tight">
+          <div class="text-center py-4 md:py-6">
+            <div class="text-6xl sm:text-7xl md:text-8xl font-bold tabular-nums tracking-tight">
               {formatTime(timeLeft())}
             </div>
           </div>
@@ -223,9 +223,9 @@ function HomePage() {
           />
 
           {/* Control Buttons */}
-          <div class="flex justify-center gap-3">
+          <div class="flex justify-center gap-2 sm:gap-3">
             <button
-              class={`btn btn-wide ${isRunning() ? "btn-warning" : "btn-primary"} text-lg font-semibold uppercase`}
+              class={`btn btn-wide ${isRunning() ? "btn-warning" : "btn-primary"} text-base sm:text-lg font-semibold uppercase`}
               onClick={toggleTimer}
             >
               {isRunning() ? "PAUSE" : "START"}
@@ -235,14 +235,14 @@ function HomePage() {
               onClick={resetTimer}
               title="Reset"
             >
-              <i class="ri-restart-line text-2xl"></i>
+              <i class="ri-restart-line text-xl sm:text-2xl"></i>
             </button>
             <button
               class="btn btn-square btn-ghost"
               onClick={skipToNext}
               title="Skip to next phase"
             >
-              <i class="ri-skip-forward-fill text-2xl"></i>
+              <i class="ri-skip-forward-fill text-xl sm:text-2xl"></i>
             </button>
           </div>
 
@@ -250,28 +250,28 @@ function HomePage() {
           <Show
             when={mode() === "pomodoro"}
             fallback={
-              <div class="text-center py-2">
-                <div class="badge badge-primary badge-lg">
+              <div class="text-center py-1 sm:py-2">
+                <div class="badge badge-primary badge-md sm:badge-lg">
                   {mode() === "shortBreak" && "Time for a short break!"}
                   {mode() === "longBreak" && "Enjoy your long break!"}
                 </div>
               </div>
             }
           >
-            <div class="flex justify-center items-center gap-6 text-center">
+            <div class="flex justify-center items-center gap-3 sm:gap-6 text-center">
               <div>
                 <div class="text-xs opacity-60 uppercase">Session</div>
-                <div class="text-2xl font-bold text-primary">#{sessionCount() + 1}</div>
+                <div class="text-xl sm:text-2xl font-bold text-primary">#{sessionCount() + 1}</div>
               </div>
               <div class="divider divider-horizontal m-0" />
               <div>
                 <div class="text-xs opacity-60 uppercase">Completed</div>
-                <div class="text-2xl font-bold text-primary">{sessionCount()}</div>
+                <div class="text-xl sm:text-2xl font-bold text-primary">{sessionCount()}</div>
               </div>
               <div class="divider divider-horizontal m-0" />
               <div>
                 <div class="text-xs opacity-60 uppercase">Until Break</div>
-                <div class="text-2xl font-bold text-primary">
+                <div class="text-xl sm:text-2xl font-bold text-primary">
                   {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
                 </div>
               </div>

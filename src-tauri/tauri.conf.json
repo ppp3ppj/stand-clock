@@ -12,9 +12,13 @@
   "app": {
     "windows": [
       {
-        "title": "stand-clock",
-        "width": 800,
-        "height": 600
+        "title": "StandClock",
+        "width": 480,
+        "height": 720,
+        "resizable": true,
+        "center": true,
+        "minWidth": 440,
+        "minHeight": 600
       }
     ],
     "security": {
