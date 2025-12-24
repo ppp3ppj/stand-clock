@@ -246,37 +246,39 @@ function HomePage() {
         </button>
       </div>
 
-      {/* Session Info */}
-      <Show
-        when={mode() === "pomodoro"}
-        fallback={
-          <div class="text-center">
-            <div class="badge badge-primary badge-lg px-6 py-4 text-base">
-              {mode() === "shortBreak" && "Time for a short break!"}
-              {mode() === "longBreak" && "Enjoy your long break!"}
+      {/* Session Info - Fixed Height */}
+      <div class="h-20 flex items-center justify-center">
+        <Show
+          when={mode() === "pomodoro"}
+          fallback={
+            <div class="text-center">
+              <div class="badge badge-primary badge-lg px-6 py-4 text-base">
+                {mode() === "shortBreak" && "Time for a short break!"}
+                {mode() === "longBreak" && "Enjoy your long break!"}
+              </div>
+            </div>
+          }
+        >
+          <div class="flex justify-center items-center gap-8 text-center">
+            <div>
+              <div class="text-xs opacity-60 uppercase mb-1">Session</div>
+              <div class="text-3xl font-bold text-primary">#{sessionCount() + 1}</div>
+            </div>
+            <div class="divider divider-horizontal m-0 h-12" />
+            <div>
+              <div class="text-xs opacity-60 uppercase mb-1">Completed</div>
+              <div class="text-3xl font-bold text-primary">{sessionCount()}</div>
+            </div>
+            <div class="divider divider-horizontal m-0 h-12" />
+            <div>
+              <div class="text-xs opacity-60 uppercase mb-1">Until Break</div>
+              <div class="text-3xl font-bold text-primary">
+                {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
+              </div>
             </div>
           </div>
-        }
-      >
-        <div class="flex justify-center items-center gap-8 text-center">
-          <div>
-            <div class="text-xs opacity-60 uppercase mb-1">Session</div>
-            <div class="text-3xl font-bold text-primary">#{sessionCount() + 1}</div>
-          </div>
-          <div class="divider divider-horizontal m-0 h-12" />
-          <div>
-            <div class="text-xs opacity-60 uppercase mb-1">Completed</div>
-            <div class="text-3xl font-bold text-primary">{sessionCount()}</div>
-          </div>
-          <div class="divider divider-horizontal m-0 h-12" />
-          <div>
-            <div class="text-xs opacity-60 uppercase mb-1">Until Break</div>
-            <div class="text-3xl font-bold text-primary">
-              {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
-            </div>
-          </div>
-        </div>
-      </Show>
+        </Show>
+      </div>
     </div>
   );
 }
