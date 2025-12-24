@@ -3,6 +3,7 @@ import { ParentComponent } from "solid-js";
 import HomePage from "./pages/HomePage";
 import SettingsPage from "./pages/SettingsPage";
 import TimerSettingsPage from "./pages/TimerSettingsPage";
+import TimelinePage from "./pages/TimelinePage";
 import "./App.css";
 
 const Layout: ParentComponent = (props) => {
@@ -33,6 +34,18 @@ const Layout: ParentComponent = (props) => {
               title="Timer"
             >
               <i class="ri-timer-line text-2xl"></i>
+            </A>
+          </div>
+
+          <div class="lg:tooltip lg:tooltip-right" data-tip="Timeline">
+            <A
+              href="/timeline"
+              class="btn btn-ghost btn-square"
+              activeClass="btn-primary"
+              inactiveClass="btn-ghost"
+              title="Timeline"
+            >
+              <i class="ri-history-line text-2xl"></i>
             </A>
           </div>
 
@@ -74,6 +87,7 @@ function App() {
   return (
     <Route path="/" component={Layout}>
       <Route path="/" component={HomePage} />
+      <Route path="/timeline" component={TimelinePage} />
       <Route path="/timer-settings" component={TimerSettingsPage} />
       <Route path="/settings" component={SettingsPage} />
     </Route>

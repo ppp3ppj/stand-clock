@@ -1,19 +1,13 @@
-import { createSignal, onCleanup, Show } from "solid-js";
+import { onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
+import { useTimer, type TimerMode } from "../contexts/TimerContext";
 import clickSound from "../assets/sounds/click1.ogg";
 import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
 import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
 
-type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
-
 function HomePage() {
   const { settings } = useTimerSettings();
-
-  // Timer state
-  const [mode, setMode] = createSignal<TimerMode>("pomodoro");
-  const [timeLeft, setTimeLeft] = createSignal(0);
-  const [isRunning, setIsRunning] = createSignal(false);
-  const [sessionCount, setSessionCount] = createSignal(0);
+  const { mode, setMode, timeLeft, setTimeLeft, isRunning, setIsRunning, sessionCount, setSessionCount } = useTimer();
 
   let intervalId: number | null = null;
 
