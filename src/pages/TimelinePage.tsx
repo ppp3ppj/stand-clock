@@ -74,14 +74,18 @@ const TimelinePage: Component = () => {
       });
     }
 
-    // Add upcoming sessions (next 3 work sessions)
-    const upcomingWorkSessions = 3;
-
+    // Add upcoming sessions (only within current cycle)
     // Start from the next pomodoro session number
     let nextPomodoroNum = currentMode === 'pomodoro' ? currentSessionNumber + 2 : currentSessionNumber + 1;
 
-    for (let i = 0; i < upcomingWorkSessions; i++) {
+    // Only show upcoming sessions up to the end of current cycle
+    const remainingSessions = sessionsBeforeLongBreak - currentSessionNumber - (currentMode === 'pomodoro' ? 1 : 0);
+
+    for (let i = 0; i < remainingSessions; i++) {
       const pomodoroNum = nextPomodoroNum + i;
+
+      // Don't go beyond the cycle limit
+      if (pomodoroNum > sessionsBeforeLongBreak) break;
 
       // Add upcoming break first (for the session before this one)
       if (i === 0 && currentMode !== 'pomodoro') {
@@ -112,6 +116,17 @@ const TimelinePage: Component = () => {
           status: 'upcoming',
         });
       }
+    }
+
+    // Add the final long break at the end of the cycle
+    // Show it whenever we haven't passed the cycle yet
+    if (currentMode !== 'longBreak' && currentSessionNumber < sessionsBeforeLongBreak) {
+      // Add the long break that ends the cycle
+      entries.push({
+        id: `longBreak-upcoming-${sessionsBeforeLongBreak}`,
+        type: 'longBreak',
+        status: 'upcoming',
+      });
     }
 
     return entries;
@@ -200,8 +215,16 @@ const TimelinePage: Component = () => {
     <div class="h-full flex flex-col">
       {/* Fixed Header */}
       <div class="flex-none px-4 py-3 bg-base-200/50 border-b border-base-300">
-        <h1 class="text-xl font-bold">Timeline</h1>
-        <p class="text-xs opacity-70 mt-1">Track your Pomodoro session progress</p>
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-xl font-bold">Current Cycle Timeline</h1>
+            <p class="text-xs opacity-70 mt-1">Track your current {settings().sessionsBeforeLongBreak}-session cycle</p>
+          </div>
+          <div class="text-right">
+            <div class="text-xs opacity-60 uppercase">Session</div>
+            <div class="text-2xl font-bold text-primary">{sessionCount() + (mode() === 'pomodoro' ? 1 : 0)}/{settings().sessionsBeforeLongBreak}</div>
+          </div>
+        </div>
       </div>
 
       {/* Scrollable Timeline */}

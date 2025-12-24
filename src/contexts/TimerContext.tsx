@@ -21,6 +21,7 @@ interface TimerState {
   setIsRunning: (running: boolean) => void;
   setSessionCount: (count: number | ((prev: number) => number)) => void;
   addSessionHistory: (entry: SessionHistoryEntry) => void;
+  resetCycle: () => void;
 }
 
 const TimerContext = createContext<TimerState>();
@@ -36,6 +37,11 @@ export const TimerProvider: ParentComponent = (props) => {
     setSessionHistory(prev => [...prev, entry]);
   };
 
+  const resetCycle = () => {
+    setSessionCount(0);
+    setSessionHistory([]);
+  };
+
   const state: TimerState = {
     mode,
     timeLeft,
@@ -47,6 +53,7 @@ export const TimerProvider: ParentComponent = (props) => {
     setIsRunning,
     setSessionCount,
     addSessionHistory,
+    resetCycle,
   };
 
   return (

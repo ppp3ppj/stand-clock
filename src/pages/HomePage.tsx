@@ -7,7 +7,7 @@ import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
 
 function HomePage() {
   const { settings } = useTimerSettings();
-  const { mode, setMode, timeLeft, setTimeLeft, isRunning, setIsRunning, sessionCount, setSessionCount, addSessionHistory } = useTimer();
+  const { mode, setMode, timeLeft, setTimeLeft, isRunning, setIsRunning, sessionCount, setSessionCount, addSessionHistory, resetCycle } = useTimer();
 
   let intervalId: number | null = null;
 
@@ -114,6 +114,11 @@ function HomePage() {
                   timestamp: new Date(),
                 });
 
+                // If long break finished, reset the cycle
+                if (mode() === "longBreak") {
+                  resetCycle();
+                }
+
                 // Break finished, switch back to pomodoro
                 switchMode("pomodoro");
               }
@@ -188,6 +193,11 @@ function HomePage() {
         skipped: true,
         timestamp: new Date(),
       });
+
+      // If long break skipped, reset the cycle
+      if (mode() === "longBreak") {
+        resetCycle();
+      }
 
       // From break, go back to pomodoro
       switchMode("pomodoro");
