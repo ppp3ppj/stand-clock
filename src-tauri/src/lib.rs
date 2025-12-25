@@ -43,6 +43,7 @@ pub fn run() {
                 duration INTEGER NOT NULL,
                 expected_duration INTEGER NOT NULL,
                 session_number INTEGER,
+                activity_type TEXT CHECK (activity_type IN ('stretch', 'walk', 'exercise', 'hydrate', 'rest', 'other')),
                 created_at TEXT DEFAULT (datetime('now'))
             );
             CREATE INDEX idx_session_history_timestamp ON session_history(timestamp DESC);

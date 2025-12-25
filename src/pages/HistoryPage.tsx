@@ -1,6 +1,6 @@
 import { Component, Show, For } from 'solid-js';
 import { useSessionHistory } from '../contexts/SessionHistoryContext';
-import { SessionHistoryEntry, SessionEventType, SessionType } from '../repositories/SessionHistoryRepository';
+import { SessionHistoryEntry, SessionEventType, SessionType, ActivityType } from '../repositories/SessionHistoryRepository';
 
 const HistoryPage: Component = () => {
   const { entries, isLoading, filter, setFilter, clearAll } = useSessionHistory();
@@ -115,6 +115,42 @@ const HistoryPage: Component = () => {
     }
   };
 
+  // Get activity icon
+  const getActivityIcon = (activityType: ActivityType): string => {
+    switch (activityType) {
+      case 'stretch':
+        return 'ri-body-scan-line';
+      case 'walk':
+        return 'ri-walk-line';
+      case 'exercise':
+        return 'ri-run-line';
+      case 'hydrate':
+        return 'ri-cup-line';
+      case 'rest':
+        return 'ri-zzz-line';
+      case 'other':
+        return 'ri-more-2-line';
+    }
+  };
+
+  // Get activity label
+  const getActivityLabel = (activityType: ActivityType): string => {
+    switch (activityType) {
+      case 'stretch':
+        return 'Stretch';
+      case 'walk':
+        return 'Walk';
+      case 'exercise':
+        return 'Exercise';
+      case 'hydrate':
+        return 'Hydrate';
+      case 'rest':
+        return 'Rest';
+      case 'other':
+        return 'Other';
+    }
+  };
+
   return (
     <div class="h-full flex flex-col">
       {/* Header */}
@@ -226,6 +262,13 @@ const HistoryPage: Component = () => {
                                 </span>
                               </Show>
                             </span>
+                            {/* Show activity for break sessions */}
+                            <Show when={entry.activityType && entry.sessionType !== 'pomodoro'}>
+                              <div class="mt-1 flex items-center gap-1 text-xs opacity-80">
+                                <i class={`${getActivityIcon(entry.activityType!)} text-sm`}></i>
+                                <span>{getActivityLabel(entry.activityType!)}</span>
+                              </div>
+                            </Show>
                           </div>
                         </div>
 

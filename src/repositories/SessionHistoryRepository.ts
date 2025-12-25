@@ -2,6 +2,7 @@ import { IUnitOfWork } from "./IUnitOfWork";
 
 export type SessionType = 'pomodoro' | 'shortBreak' | 'longBreak';
 export type SessionEventType = 'completed' | 'skipped' | 'manual_switch';
+export type ActivityType = 'stretch' | 'walk' | 'exercise' | 'hydrate' | 'rest' | 'other';
 
 export interface SessionHistoryEntry {
   id?: number;
@@ -11,6 +12,7 @@ export interface SessionHistoryEntry {
   duration: number; // actual seconds run before event
   expectedDuration: number; // configured duration in seconds
   sessionNumber?: number; // only for pomodoro sessions
+  activityType?: ActivityType; // for break sessions - what activity was done
 }
 
 export interface ISessionHistoryRepository {
@@ -68,8 +70,8 @@ export class SqliteSessionHistoryRepository implements ISessionHistoryRepository
       const db = await this.unitOfWork.getDatabase();
       const result = await db.execute(
         `INSERT INTO session_history
-         (session_type, event_type, timestamp, duration, expected_duration, session_number)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         (session_type, event_type, timestamp, duration, expected_duration, session_number, activity_type)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           entry.sessionType,
           entry.eventType,
@@ -77,10 +79,11 @@ export class SqliteSessionHistoryRepository implements ISessionHistoryRepository
           entry.duration,
           entry.expectedDuration,
           entry.sessionNumber ?? null,
+          entry.activityType ?? null,
         ]
       );
       console.log("[SessionHistoryRepository] Entry added:", entry);
-      return result.lastInsertId;
+      return result.lastInsertId as number;
     } catch (error) {
       console.error("[SessionHistoryRepository] Failed to add entry:", error);
       throw error;
@@ -98,6 +101,7 @@ export class SqliteSessionHistoryRepository implements ISessionHistoryRepository
         duration: number;
         expected_duration: number;
         session_number: number | null;
+        activity_type: string | null;
       }>>(
         `SELECT * FROM session_history
          WHERE timestamp >= $1 AND timestamp < $2
@@ -195,6 +199,7 @@ export class SqliteSessionHistoryRepository implements ISessionHistoryRepository
       duration: row.duration,
       expectedDuration: row.expected_duration,
       sessionNumber: row.session_number ?? undefined,
+      activityType: row.activity_type as ActivityType | undefined,
     }));
   }
 }
