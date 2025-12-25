@@ -31,6 +31,23 @@ pub fn run() {
             description: "add sound_enabled to timer_settings",
             sql: "ALTER TABLE timer_settings ADD COLUMN sound_enabled INTEGER NOT NULL DEFAULT 1;",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 3,
+            description: "create session_history table",
+            sql: "CREATE TABLE IF NOT EXISTS session_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_type TEXT NOT NULL CHECK (session_type IN ('pomodoro', 'shortBreak', 'longBreak')),
+                event_type TEXT NOT NULL CHECK (event_type IN ('completed', 'skipped', 'manual_switch')),
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                duration INTEGER NOT NULL,
+                expected_duration INTEGER NOT NULL,
+                session_number INTEGER,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+            CREATE INDEX idx_session_history_timestamp ON session_history(timestamp DESC);
+            CREATE INDEX idx_session_history_type ON session_history(session_type, event_type);",
+            kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()

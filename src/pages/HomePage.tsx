@@ -1,5 +1,6 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
+import { useSessionHistory } from "../contexts/SessionHistoryContext";
 import clickSound from "../assets/sounds/click1.ogg";
 import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
 import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
@@ -8,12 +9,14 @@ type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
 function HomePage() {
   const { settings } = useTimerSettings();
+  const { addEntry } = useSessionHistory();
 
   // Timer state
   const [mode, setMode] = createSignal<TimerMode>("pomodoro");
   const [timeLeft, setTimeLeft] = createSignal(0);
   const [isRunning, setIsRunning] = createSignal(false);
   const [sessionCount, setSessionCount] = createSignal(0);
+  const [startTime, setStartTime] = createSignal<number | null>(null);
 
   let intervalId: number | null = null;
 
@@ -54,6 +57,16 @@ function HomePage() {
   // Initialize on mount
   initializeTimer(mode());
 
+  // Helper function to get duration for a mode
+  const getDurationForMode = (m: TimerMode): number => {
+    const durations = {
+      pomodoro: Math.round(settings().workDuration * 60),
+      shortBreak: Math.round(settings().shortBreakDuration * 60),
+      longBreak: Math.round(settings().longBreakDuration * 60),
+    };
+    return durations[m];
+  };
+
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const totalSeconds = Math.round(seconds);
@@ -74,7 +87,8 @@ function HomePage() {
       }
       setIsRunning(false);
     } else {
-      // Start
+      // Start - record when timer started
+      setStartTime(Date.now());
       setIsRunning(true);
       intervalId = window.setInterval(() => {
         setTimeLeft((prev) => {
@@ -85,6 +99,20 @@ function HomePage() {
               intervalId = null;
             }
             setIsRunning(false);
+
+            // Track completion event
+            const elapsedSeconds = startTime()
+              ? Math.round((Date.now() - startTime()!) / 1000)
+              : getDurationForMode(mode());
+
+            addEntry({
+              sessionType: mode(),
+              eventType: 'completed',
+              timestamp: new Date().toISOString(),
+              duration: elapsedSeconds,
+              expectedDuration: getDurationForMode(mode()),
+              sessionNumber: mode() === 'pomodoro' ? sessionCount() + 1 : undefined,
+            }).catch(err => console.error("Failed to track completion:", err));
 
             // Play notification sound
             playNotificationSound();
@@ -124,29 +152,59 @@ function HomePage() {
       intervalId = null;
     }
     setIsRunning(false);
+    setStartTime(null);
     initializeTimer(mode());
   };
 
   // Switch mode
-  const switchMode = (newMode: TimerMode) => {
+  const switchMode = async (newMode: TimerMode) => {
+    // If timer was running, this is a manual switch
+    if (isRunning() && startTime()) {
+      const elapsedSeconds = Math.round((Date.now() - startTime()!) / 1000);
+      await addEntry({
+        sessionType: mode(),
+        eventType: 'manual_switch',
+        timestamp: new Date().toISOString(),
+        duration: elapsedSeconds,
+        expectedDuration: getDurationForMode(mode()),
+        sessionNumber: mode() === 'pomodoro' ? sessionCount() + 1 : undefined,
+      }).catch(err => console.error("Failed to track manual switch:", err));
+    }
+
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
     }
     setMode(newMode);
     setIsRunning(false);
+    setStartTime(null);
     initializeTimer(newMode);
   };
 
   // Skip to next phase
-  const skipToNext = () => {
+  const skipToNext = async () => {
     playPopAlertSound(); // Play pop alert sound
+
+    // Track skip event
+    const elapsedSeconds = startTime() && isRunning()
+      ? Math.round((Date.now() - startTime()!) / 1000)
+      : 0;
+
+    await addEntry({
+      sessionType: mode(),
+      eventType: 'skipped',
+      timestamp: new Date().toISOString(),
+      duration: elapsedSeconds,
+      expectedDuration: getDurationForMode(mode()),
+      sessionNumber: mode() === 'pomodoro' ? sessionCount() + 1 : undefined,
+    }).catch(err => console.error("Failed to track skip:", err));
 
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
     }
     setIsRunning(false);
+    setStartTime(null);
 
     if (mode() === "pomodoro") {
       // Complete the pomodoro session and move to break
