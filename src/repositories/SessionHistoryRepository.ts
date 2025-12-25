@@ -60,6 +60,17 @@ export interface ISessionHistoryRepository {
    * Clear all history
    */
   clearAll(): Promise<void>;
+
+  /**
+   * Get daily session counts for calendar indicators
+   * Returns map of date (YYYY-MM-DD) -> count
+   */
+  getDailySummary(startDate: Date, endDate: Date): Promise<Map<string, number>>;
+
+  /**
+   * Get all entries for a specific date
+   */
+  getByDate(date: Date): Promise<SessionHistoryEntry[]>;
 }
 
 export class SqliteSessionHistoryRepository implements ISessionHistoryRepository {
@@ -188,6 +199,38 @@ export class SqliteSessionHistoryRepository implements ISessionHistoryRepository
       console.error("[SessionHistoryRepository] Failed to clear all:", error);
       throw error;
     }
+  }
+
+  async getDailySummary(startDate: Date, endDate: Date): Promise<Map<string, number>> {
+    try {
+      const db = await this.unitOfWork.getDatabase();
+      const result = await db.select<Array<{ date: string; count: number }>>(
+        `SELECT DATE(timestamp) as date, COUNT(*) as count
+         FROM session_history
+         WHERE timestamp >= $1 AND timestamp < $2
+         GROUP BY DATE(timestamp)
+         ORDER BY date`,
+        [startDate.toISOString(), endDate.toISOString()]
+      );
+
+      const summary = new Map<string, number>();
+      result.forEach(row => {
+        summary.set(row.date, row.count);
+      });
+
+      console.log("[SessionHistoryRepository] Daily summary loaded:", summary.size, "days");
+      return summary;
+    } catch (error) {
+      console.error("[SessionHistoryRepository] Failed to get daily summary:", error);
+      throw error;
+    }
+  }
+
+  async getByDate(date: Date): Promise<SessionHistoryEntry[]> {
+    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+    return this.getByDateRange(startOfDay, endOfDay);
   }
 
   private mapRows(rows: any[]): SessionHistoryEntry[] {

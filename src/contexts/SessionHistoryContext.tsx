@@ -1,19 +1,29 @@
-import { createContext, useContext, createSignal, onMount, onCleanup, ParentComponent } from "solid-js";
+import { createContext, useContext, createSignal, createEffect, onCleanup, ParentComponent } from "solid-js";
 import { IUnitOfWork } from "../repositories/IUnitOfWork";
 import { createUnitOfWork } from "../repositories/SqliteUnitOfWork";
 import { SessionHistoryEntry } from "../repositories/SessionHistoryRepository";
-
-type TimeFilter = 'today' | 'week' | 'month' | 'all';
+import { getMonthRange } from "../utils/dateUtils";
 
 interface SessionHistoryContextValue {
+  // Legacy (kept for compatibility during transition)
   entries: () => SessionHistoryEntry[];
   isLoading: () => boolean;
-  filter: () => TimeFilter;
-  setFilter: (filter: TimeFilter) => void;
+
+  // Calendar-specific state
+  selectedDate: () => Date | null;
+  setSelectedDate: (date: Date | null) => void;
+  currentMonth: () => Date;
+  setCurrentMonth: (date: Date) => void;
+  daySessionCounts: () => Map<string, number>;
+  selectedDayEntries: () => SessionHistoryEntry[];
+  isLoadingDay: () => boolean;
+
+  // Operations
   addEntry: (entry: Omit<SessionHistoryEntry, 'id'>) => Promise<void>;
   deleteEntry: (id: number) => Promise<void>;
   clearAll: () => Promise<void>;
-  refresh: () => Promise<void>;
+  loadMonthSummary: (date: Date) => Promise<void>;
+  loadDayEntries: (date: Date) => Promise<void>;
 }
 
 const SessionHistoryContext = createContext<SessionHistoryContextValue>();
@@ -25,38 +35,55 @@ interface SessionHistoryProviderProps {
 export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps> = (props) => {
   const unitOfWork = props.unitOfWork ?? createUnitOfWork();
 
+  // Legacy state (kept for compatibility)
   const [entries, setEntries] = createSignal<SessionHistoryEntry[]>([]);
-  const [isLoading, setIsLoading] = createSignal(true);
-  const [filter, setFilterSignal] = createSignal<TimeFilter>('today');
+  const [isLoading, setIsLoading] = createSignal(false);
 
-  const loadEntries = async (currentFilter: TimeFilter) => {
+  // Calendar state
+  const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
+  const [currentMonth, setCurrentMonth] = createSignal<Date>(new Date());
+  const [daySessionCounts, setDaySessionCounts] = createSignal<Map<string, number>>(new Map());
+  const [selectedDayEntries, setSelectedDayEntries] = createSignal<SessionHistoryEntry[]>([]);
+  const [isLoadingDay, setIsLoadingDay] = createSignal(false);
+
+  const loadMonthSummary = async (date: Date) => {
     setIsLoading(true);
     try {
-      let loaded: SessionHistoryEntry[];
-      switch (currentFilter) {
-        case 'today':
-          loaded = await unitOfWork.sessionHistory.getToday();
-          break;
-        case 'week':
-          loaded = await unitOfWork.sessionHistory.getThisWeek();
-          break;
-        case 'month':
-          loaded = await unitOfWork.sessionHistory.getThisMonth();
-          break;
-        case 'all':
-          loaded = await unitOfWork.sessionHistory.getAll();
-          break;
-      }
-      setEntries(loaded);
+      const { start, end } = getMonthRange(date);
+      const summary = await unitOfWork.sessionHistory.getDailySummary(start, end);
+      setDaySessionCounts(summary);
     } catch (error) {
-      console.error("[SessionHistoryContext] Failed to load entries:", error);
+      console.error("[SessionHistoryContext] Failed to load month summary:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  onMount(async () => {
-    await loadEntries(filter());
+  const loadDayEntries = async (date: Date) => {
+    setIsLoadingDay(true);
+    try {
+      const entries = await unitOfWork.sessionHistory.getByDate(date);
+      setSelectedDayEntries(entries);
+    } catch (error) {
+      console.error("[SessionHistoryContext] Failed to load day entries:", error);
+    } finally {
+      setIsLoadingDay(false);
+    }
+  };
+
+  // Auto-load month summary when currentMonth changes
+  createEffect(() => {
+    loadMonthSummary(currentMonth());
+  });
+
+  // Auto-load day entries when selectedDate changes
+  createEffect(() => {
+    const date = selectedDate();
+    if (date) {
+      loadDayEntries(date);
+    } else {
+      setSelectedDayEntries([]);
+    }
   });
 
   onCleanup(async () => {
@@ -66,7 +93,14 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
   const addEntry = async (entry: Omit<SessionHistoryEntry, 'id'>) => {
     try {
       await unitOfWork.sessionHistory.addEntry(entry);
-      await loadEntries(filter());
+
+      // Refresh month summary
+      await loadMonthSummary(currentMonth());
+
+      // Refresh selected day if affected
+      if (selectedDate()) {
+        await loadDayEntries(selectedDate()!);
+      }
     } catch (error) {
       console.error("[SessionHistoryContext] Failed to add entry:", error);
       throw error;
@@ -76,7 +110,14 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
   const deleteEntry = async (id: number) => {
     try {
       await unitOfWork.sessionHistory.delete(id);
-      await loadEntries(filter());
+
+      // Refresh month summary
+      await loadMonthSummary(currentMonth());
+
+      // Refresh selected day if affected
+      if (selectedDate()) {
+        await loadDayEntries(selectedDate()!);
+      }
     } catch (error) {
       console.error("[SessionHistoryContext] Failed to delete entry:", error);
       throw error;
@@ -87,31 +128,34 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
     try {
       await unitOfWork.sessionHistory.clearAll();
       setEntries([]);
+      setDaySessionCounts(new Map());
+      setSelectedDayEntries([]);
     } catch (error) {
       console.error("[SessionHistoryContext] Failed to clear all:", error);
       throw error;
     }
   };
 
-  const refresh = async () => {
-    await loadEntries(filter());
-  };
-
-  // Auto-refresh when filter changes
-  const setFilter = async (newFilter: TimeFilter) => {
-    setFilterSignal(newFilter);
-    await loadEntries(newFilter);
-  };
-
   const value: SessionHistoryContextValue = {
+    // Legacy
     entries,
     isLoading,
-    filter,
-    setFilter,
+
+    // Calendar-specific
+    selectedDate,
+    setSelectedDate,
+    currentMonth,
+    setCurrentMonth,
+    daySessionCounts,
+    selectedDayEntries,
+    isLoadingDay,
+
+    // Operations
     addEntry,
     deleteEntry,
     clearAll,
-    refresh,
+    loadMonthSummary,
+    loadDayEntries,
   };
 
   return (

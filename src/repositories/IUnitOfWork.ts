@@ -1,4 +1,6 @@
 import Database from '@tauri-apps/plugin-sql';
+import { ITimerSettingsRepository } from './TimerSettingsRepository';
+import { ISessionHistoryRepository } from './SessionHistoryRepository';
 
 /**
  * Unit of Work interface for managing database transactions
@@ -35,4 +37,14 @@ export interface IUnitOfWork {
    * Dispose/cleanup resources
    */
   dispose(): Promise<void>;
+
+  /**
+   * Get timer settings repository
+   */
+  readonly timerSettings: ITimerSettingsRepository;
+
+  /**
+   * Get session history repository
+   */
+  readonly sessionHistory: ISessionHistoryRepository;
 }
