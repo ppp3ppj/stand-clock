@@ -49,6 +49,12 @@ pub fn run() {
             CREATE INDEX idx_session_history_timestamp ON session_history(timestamp DESC);
             CREATE INDEX idx_session_history_type ON session_history(session_type, event_type);",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 4,
+            description: "add default_break_activity to timer_settings",
+            sql: "ALTER TABLE timer_settings ADD COLUMN default_break_activity TEXT DEFAULT 'ask' CHECK (default_break_activity IN ('ask', 'stretch', 'walk', 'exercise', 'hydrate', 'rest', 'other'));",
+            kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()

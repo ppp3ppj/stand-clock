@@ -1,4 +1,5 @@
 import { IUnitOfWork } from './IUnitOfWork';
+import { ActivityType } from './SessionHistoryRepository';
 
 export interface TimerSettings {
   workDuration: number;
@@ -6,6 +7,7 @@ export interface TimerSettings {
   longBreakDuration: number;
   sessionsBeforeLongBreak: number;
   soundEnabled: boolean;
+  defaultBreakActivity: ActivityType | 'ask'; // 'ask' means show popup
 }
 
 export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
@@ -14,6 +16,7 @@ export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   longBreakDuration: 15,
   sessionsBeforeLongBreak: 4,
   soundEnabled: true,
+  defaultBreakActivity: 'ask',
 };
 
 /**
@@ -52,6 +55,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
         long_break_duration: number;
         sessions_before_long_break: number;
         sound_enabled?: number;
+        default_break_activity?: string;
       }>>("SELECT * FROM timer_settings WHERE id = 1");
 
       if (result.length > 0) {
@@ -62,6 +66,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           longBreakDuration: row.long_break_duration,
           sessionsBeforeLongBreak: row.sessions_before_long_break,
           soundEnabled: row.sound_enabled !== undefined ? Boolean(row.sound_enabled) : true,
+          defaultBreakActivity: (row.default_break_activity as ActivityType | 'ask') || 'ask',
         };
       }
 
@@ -82,6 +87,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
              long_break_duration = $3,
              sessions_before_long_break = $4,
              sound_enabled = $5,
+             default_break_activity = $6,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = 1`,
         [
@@ -90,6 +96,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           settings.longBreakDuration,
           settings.sessionsBeforeLongBreak,
           settings.soundEnabled ? 1 : 0,
+          settings.defaultBreakActivity,
         ]
       );
       console.log("[SqliteTimerSettingsRepository] Settings saved successfully");

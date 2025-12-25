@@ -141,10 +141,17 @@ function HomePage() {
                   ? "longBreak"
                   : "shortBreak";
 
-                // Show activity selection dialog for breaks
+                // Show activity selection dialog for breaks (or auto-set if default configured)
                 setCurrentBreakType(nextMode);
-                setShowActivityDialog(true);
-                setSelectedActivity(null);
+                const defaultActivity = settings().defaultBreakActivity;
+                if (defaultActivity === 'ask') {
+                  setShowActivityDialog(true);
+                  setSelectedActivity(null);
+                } else {
+                  // Use default activity without showing popup
+                  setSelectedActivity(defaultActivity);
+                  setShowActivityDialog(false);
+                }
 
                 // Reset elapsed time tracker
                 setElapsedSeconds(0);
@@ -225,11 +232,18 @@ function HomePage() {
     setStartTime(null);
     setElapsedSeconds(0);
 
-    // Show activity dialog when manually switching to a break
+    // Show activity dialog when manually switching to a break (or auto-set if default configured)
     if (newMode !== 'pomodoro') {
       setCurrentBreakType(newMode);
-      setShowActivityDialog(true);
-      setSelectedActivity(null);
+      const defaultActivity = settings().defaultBreakActivity;
+      if (defaultActivity === 'ask') {
+        setShowActivityDialog(true);
+        setSelectedActivity(null);
+      } else {
+        // Use default activity without showing popup
+        setSelectedActivity(defaultActivity);
+        setShowActivityDialog(false);
+      }
     }
 
     initializeTimer(newMode);
@@ -272,10 +286,17 @@ function HomePage() {
         ? "longBreak"
         : "shortBreak";
 
-      // Show activity selection dialog for breaks
+      // Show activity selection dialog for breaks (or auto-set if default configured)
       setCurrentBreakType(nextMode);
-      setShowActivityDialog(true);
-      setSelectedActivity(null);
+      const defaultActivity = settings().defaultBreakActivity;
+      if (defaultActivity === 'ask') {
+        setShowActivityDialog(true);
+        setSelectedActivity(null);
+      } else {
+        // Use default activity without showing popup
+        setSelectedActivity(defaultActivity);
+        setShowActivityDialog(false);
+      }
       switchMode(nextMode);
     } else {
       // From break, go back to pomodoro
