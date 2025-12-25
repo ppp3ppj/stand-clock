@@ -1,4 +1,4 @@
-import { Component, Show, For, createSignal, onMount } from 'solid-js';
+import { Component, Show, For } from 'solid-js';
 import { SessionHistoryEntry, SessionEventType, SessionType, ActivityType } from '../repositories/SessionHistoryRepository';
 import { formatDateLong } from '../utils/dateUtils';
 import 'cally';
@@ -11,19 +11,16 @@ interface DaySessionListProps {
 }
 
 const DaySessionList: Component<DaySessionListProps> = (props) => {
-  const [showDatePicker, setShowDatePicker] = createSignal(false);
   let calendarRef: any;
 
-  onMount(() => {
-    // Listen for date selection from cally calendar
+  const handleCalendarChange = (e: any) => {
+    const selectedDate = new Date(e.target.value);
+    props.onDateSelect(selectedDate);
+    // Close the popover
     if (calendarRef) {
-      calendarRef.addEventListener('change', (e: any) => {
-        const selectedDate = new Date(e.target.value);
-        props.onDateSelect(selectedDate);
-        setShowDatePicker(false);
-      });
+      calendarRef.closest('[popover]')?.hidePopover();
     }
-  });
+  };
 
   const handlePrevDay = () => {
     if (props.date) {
@@ -194,8 +191,10 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
 
               {/* Current Date - Clickable */}
               <button
-                onClick={() => setShowDatePicker(true)}
+                popovertarget="cally-popover"
                 class="btn btn-ghost btn-sm flex items-center gap-2 hover:btn-primary"
+                id="cally-trigger"
+                style="anchor-name:--cally-trigger"
               >
                 <i class="ri-calendar-event-line"></i>
                 <span class="font-semibold">{formatDateLong(props.date!)}</span>
@@ -293,31 +292,19 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
       </div>
     </div>
 
-      {/* Cally Date Picker Modal */}
-      <Show when={showDatePicker()}>
-        <div class="modal modal-open">
-          <div class="modal-box">
-            <h3 class="font-bold text-lg mb-4">Select a Date</h3>
-
-            <calendar-date
-              ref={calendarRef}
-              value={props.date ? formatDateForCally(props.date) : formatDateForCally(new Date())}
-              class="cally bg-base-100 border border-base-300 shadow-lg rounded-box p-4"
-            >
-              <i class="ri-arrow-left-s-line text-lg" slot="previous" aria-label="Previous month"></i>
-              <i class="ri-arrow-right-s-line text-lg" slot="next" aria-label="Next month"></i>
-              <calendar-month></calendar-month>
-            </calendar-date>
-
-            <div class="modal-action">
-              <button class="btn" onClick={() => setShowDatePicker(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-          <div class="modal-backdrop" onClick={() => setShowDatePicker(false)}></div>
-        </div>
-      </Show>
+      {/* Cally Date Picker Popover */}
+      <div popover id="cally-popover" class="dropdown bg-base-100 rounded-box shadow-lg p-4" style="position-anchor:--cally-trigger">
+        <calendar-date
+          ref={calendarRef}
+          value={props.date ? formatDateForCally(props.date) : formatDateForCally(new Date())}
+          class="cally"
+          onchange={handleCalendarChange}
+        >
+          <svg aria-label="Previous" class="fill-current size-4" slot="previous" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.75 19.5 8.25 12l7.5-7.5"></path></svg>
+          <svg aria-label="Next" class="fill-current size-4" slot="next" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path></svg>
+          <calendar-month></calendar-month>
+        </calendar-date>
+      </div>
     </>
   );
 };
