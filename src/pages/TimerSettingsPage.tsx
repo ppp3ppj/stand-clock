@@ -264,39 +264,46 @@ const TimerSettingsPage: Component = () => {
               <div class="card-body p-4 sm:p-6">
                 <h2 class="card-title text-xl mb-4">Preferences</h2>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sound Toggle */}
+                <div class="space-y-6">
+                  {/* Sound Notifications */}
                   <div class="form-control">
-                    <label class="label cursor-pointer justify-start gap-4">
-                      <input
-                        type="checkbox"
-                        class="toggle toggle-primary"
-                        checked={soundEnabled()}
-                        onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
-                      />
-                      <div class="flex-1">
-                        <span class="label-text font-semibold block">Sound Notifications</span>
-                        <span class="label-text-alt opacity-60">Play sound when timer ends</span>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div class="flex items-center gap-4">
+                        <input
+                          type="checkbox"
+                          class="toggle toggle-primary"
+                          checked={soundEnabled()}
+                          onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
+                        />
+                        <div>
+                          <span class="label-text font-semibold block">Sound Notifications</span>
+                          <span class="label-text-alt opacity-60">Play sound when timer ends</span>
+                        </div>
                       </div>
-                    </label>
-                    <Show when={soundEnabled()}>
-                      <button
-                        class="btn btn-sm btn-outline gap-2 mt-2"
-                        onClick={playTestSound}
-                      >
-                        <i class="ri-volume-up-line"></i>
-                        Test Sound
-                      </button>
-                    </Show>
+                      <Show when={soundEnabled()}>
+                        <button
+                          class="btn btn-sm btn-outline gap-2"
+                          onClick={playTestSound}
+                        >
+                          <i class="ri-volume-up-line"></i>
+                          Test Sound
+                        </button>
+                      </Show>
+                    </div>
                   </div>
 
-                  {/* Default Activity */}
+                  <div class="divider my-0"></div>
+
+                  {/* Default Break Activity */}
                   <div class="form-control">
                     <label class="label">
                       <span class="label-text font-semibold">Default Break Activity</span>
+                      <span class="label-text-alt opacity-60">
+                        {defaultBreakActivity() === 'ask' ? 'Show popup' : 'Auto-set'}
+                      </span>
                     </label>
                     <select
-                      class="select select-bordered"
+                      class="select select-bordered w-full"
                       value={defaultBreakActivity()}
                       onChange={(e) => setDefaultBreakActivity(e.currentTarget.value as ActivityType | 'ask')}
                     >
@@ -308,11 +315,6 @@ const TimerSettingsPage: Component = () => {
                       <option value="rest">😴 Rest</option>
                       <option value="other">⚙️ Other</option>
                     </select>
-                    <label class="label">
-                      <span class="label-text-alt opacity-60">
-                        {defaultBreakActivity() === 'ask' ? 'Show popup for each break' : 'Auto-set without popup'}
-                      </span>
-                    </label>
                   </div>
                 </div>
               </div>
