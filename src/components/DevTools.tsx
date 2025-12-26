@@ -263,13 +263,13 @@ const DevTools: Component = () => {
             </button>
           </div>
           <div class="bg-base-200 rounded-lg p-3">
-            <div class="flex items-start gap-2">
-              <i class="ri-folder-open-line text-lg mt-0.5"></i>
-              <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <i class="ri-folder-open-line text-lg"></i>
+              <div class="flex-1 min-w-0 flex items-center">
                 <p class="text-xs font-mono break-all">{dbPath()}</p>
               </div>
               <button
-                class="btn btn-xs btn-ghost"
+                class="btn btn-xs btn-ghost flex-shrink-0"
                 onClick={() => {
                   navigator.clipboard.writeText(dbPath());
                   showSuccessMessage('Path copied to clipboard');
