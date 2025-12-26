@@ -1,5 +1,6 @@
 import { Component, createSignal, Show } from 'solid-js';
 import { useTimerSettings } from '../contexts/TimerSettingsContext';
+import { ActivityType } from '../repositories/SessionHistoryRepository';
 import notificationSound from '../assets/sounds/mixkit-notification-bell-592.wav';
 
 const TimerSettingsPage: Component = () => {
@@ -11,6 +12,7 @@ const TimerSettingsPage: Component = () => {
   const [longBreakDuration, setLongBreakDuration] = createSignal(settings().longBreakDuration);
   const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = createSignal(settings().sessionsBeforeLongBreak);
   const [soundEnabled, setSoundEnabled] = createSignal(settings().soundEnabled);
+  const [defaultBreakActivity, setDefaultBreakActivity] = createSignal(settings().defaultBreakActivity);
   const [isSaving, setIsSaving] = createSignal(false);
 
   // Update local state when settings load
@@ -20,6 +22,7 @@ const TimerSettingsPage: Component = () => {
     setLongBreakDuration(settings().longBreakDuration);
     setSessionsBeforeLongBreak(settings().sessionsBeforeLongBreak);
     setSoundEnabled(settings().soundEnabled);
+    setDefaultBreakActivity(settings().defaultBreakActivity);
   };
 
   // Watch for settings changes
@@ -29,7 +32,8 @@ const TimerSettingsPage: Component = () => {
       shortBreakDuration() !== settings().shortBreakDuration ||
       longBreakDuration() !== settings().longBreakDuration ||
       sessionsBeforeLongBreak() !== settings().sessionsBeforeLongBreak ||
-      soundEnabled() !== settings().soundEnabled
+      soundEnabled() !== settings().soundEnabled ||
+      defaultBreakActivity() !== settings().defaultBreakActivity
     );
   };
 
@@ -41,6 +45,7 @@ const TimerSettingsPage: Component = () => {
       longBreakDuration: longBreakDuration(),
       sessionsBeforeLongBreak: sessionsBeforeLongBreak(),
       soundEnabled: soundEnabled(),
+      defaultBreakActivity: defaultBreakActivity(),
     });
     setIsSaving(false);
   };
@@ -389,6 +394,49 @@ const TimerSettingsPage: Component = () => {
                   </button>
                 </div>
               </Show>
+            </div>
+          </div>
+
+          {/* Default Break Activity */}
+          <div class="card bg-base-200 shadow-xl">
+            <div class="card-body">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h2 class="card-title text-2xl mb-1">Default Break Activity</h2>
+                  <p class="text-sm text-base-content/70">Set a default activity to skip the popup during breaks</p>
+                </div>
+              </div>
+
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text font-semibold">Activity Preference</span>
+                </label>
+                <select
+                  class="select select-bordered select-lg w-full"
+                  value={defaultBreakActivity()}
+                  onChange={(e) => setDefaultBreakActivity(e.currentTarget.value as any)}
+                >
+                  <option value="ask">Ask me every time (Show popup)</option>
+                  <option value="stretch">🧘 Stretch - Always use stretching</option>
+                  <option value="walk">🚶 Walk - Always use walking</option>
+                  <option value="exercise">🏃 Exercise - Always use exercise</option>
+                  <option value="hydrate">☕ Hydrate - Always use hydration</option>
+                  <option value="rest">😴 Rest - Always use resting</option>
+                  <option value="other">⚙️ Other - Always use other</option>
+                </select>
+              </div>
+
+              <div class={`alert ${defaultBreakActivity() === 'ask' ? 'alert-info' : 'alert-success'} mt-4`}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm">
+                  {defaultBreakActivity() === 'ask'
+                    ? 'A popup will ask you to select an activity when each break starts'
+                    : `Breaks will automatically use "${defaultBreakActivity()}" activity without showing the popup`
+                  }
+                </span>
+              </div>
             </div>
           </div>
 

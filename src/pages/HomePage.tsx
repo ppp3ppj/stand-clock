@@ -1,5 +1,8 @@
 import { createSignal, onCleanup, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
+import { useSessionHistory } from "../contexts/SessionHistoryContext";
+import { ActivityType } from "../repositories/SessionHistoryRepository";
+import ActivitySelectionDialog from "../components/ActivitySelectionDialog";
 import clickSound from "../assets/sounds/click1.ogg";
 import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
 import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
@@ -8,12 +11,18 @@ type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
 function HomePage() {
   const { settings } = useTimerSettings();
+  const { addEntry } = useSessionHistory();
 
   // Timer state
   const [mode, setMode] = createSignal<TimerMode>("pomodoro");
   const [timeLeft, setTimeLeft] = createSignal(0);
   const [isRunning, setIsRunning] = createSignal(false);
   const [sessionCount, setSessionCount] = createSignal(0);
+  const [startTime, setStartTime] = createSignal<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = createSignal(0); // Track actual elapsed time
+  const [showActivityDialog, setShowActivityDialog] = createSignal(false);
+  const [currentBreakType, setCurrentBreakType] = createSignal<'shortBreak' | 'longBreak'>('shortBreak');
+  const [selectedActivity, setSelectedActivity] = createSignal<ActivityType | null>(null);
 
   let intervalId: number | null = null;
 
@@ -54,6 +63,16 @@ function HomePage() {
   // Initialize on mount
   initializeTimer(mode());
 
+  // Helper function to get duration for a mode
+  const getDurationForMode = (m: TimerMode): number => {
+    const durations = {
+      pomodoro: Math.round(settings().workDuration * 60),
+      shortBreak: Math.round(settings().shortBreakDuration * 60),
+      longBreak: Math.round(settings().longBreakDuration * 60),
+    };
+    return durations[m];
+  };
+
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const totalSeconds = Math.round(seconds);
@@ -67,14 +86,20 @@ function HomePage() {
     playClickSound(); // Play click sound on every toggle
 
     if (isRunning()) {
-      // Pause
+      // Pause - accumulate elapsed time
+      if (startTime()) {
+        const sessionElapsed = Math.round((Date.now() - startTime()!) / 1000);
+        setElapsedSeconds(elapsedSeconds() + sessionElapsed);
+      }
       if (intervalId !== null) {
         clearInterval(intervalId);
         intervalId = null;
       }
       setIsRunning(false);
+      setStartTime(null);
     } else {
-      // Start
+      // Start/Resume - record when timer started
+      setStartTime(Date.now());
       setIsRunning(true);
       intervalId = window.setInterval(() => {
         setTimeLeft((prev) => {
@@ -86,23 +111,70 @@ function HomePage() {
             }
             setIsRunning(false);
 
+            // Calculate final elapsed time
+            const sessionElapsed = startTime()
+              ? Math.round((Date.now() - startTime()!) / 1000)
+              : 0;
+            const totalElapsed = elapsedSeconds() + sessionElapsed;
+
             // Play notification sound
             playNotificationSound();
 
             // Handle session completion - use setTimeout to ensure state updates complete
             setTimeout(() => {
               if (mode() === "pomodoro") {
+                // Track pomodoro completion
+                addEntry({
+                  sessionType: mode(),
+                  eventType: 'completed',
+                  timestamp: new Date().toISOString(),
+                  duration: totalElapsed,
+                  expectedDuration: getDurationForMode(mode()),
+                  sessionNumber: sessionCount() + 1,
+                }).catch(err => console.error("Failed to track completion:", err));
+
                 const newSessionCount = sessionCount() + 1;
                 setSessionCount(newSessionCount);
 
                 // Auto-switch to break after state updates
-                if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
-                  switchMode("longBreak");
+                const nextMode = newSessionCount % settings().sessionsBeforeLongBreak === 0
+                  ? "longBreak"
+                  : "shortBreak";
+
+                // Show activity selection dialog for breaks (or auto-set if default configured)
+                setCurrentBreakType(nextMode);
+                const defaultActivity = settings().defaultBreakActivity;
+                if (defaultActivity === 'ask') {
+                  setShowActivityDialog(true);
+                  setSelectedActivity(null);
                 } else {
-                  switchMode("shortBreak");
+                  // Use default activity without showing popup
+                  setSelectedActivity(defaultActivity);
+                  setShowActivityDialog(false);
                 }
+
+                // Reset elapsed time tracker
+                setElapsedSeconds(0);
+                setStartTime(null);
+
+                switchMode(nextMode);
               } else {
-                // Break finished, switch back to pomodoro
+                // Break finished, track with selected activity and switch back to pomodoro
+                addEntry({
+                  sessionType: mode(),
+                  eventType: 'completed',
+                  timestamp: new Date().toISOString(),
+                  duration: totalElapsed,
+                  expectedDuration: getDurationForMode(mode()),
+                  activityType: selectedActivity() ?? undefined,
+                }).catch(err => console.error("Failed to track break completion:", err));
+
+                // Reset elapsed time tracker
+                setElapsedSeconds(0);
+                setStartTime(null);
+
+                // Reset activity selection for next break
+                setSelectedActivity(null);
                 switchMode("pomodoro");
               }
             }, 0);
@@ -124,44 +196,125 @@ function HomePage() {
       intervalId = null;
     }
     setIsRunning(false);
+    setStartTime(null);
+    setElapsedSeconds(0);
     initializeTimer(mode());
   };
 
   // Switch mode
-  const switchMode = (newMode: TimerMode) => {
+  const switchMode = async (newMode: TimerMode) => {
+    // If timer was running or had accumulated time, this is a manual switch
+    if ((isRunning() && startTime()) || elapsedSeconds() > 0) {
+      const sessionElapsed = startTime()
+        ? Math.round((Date.now() - startTime()!) / 1000)
+        : 0;
+      const totalElapsed = elapsedSeconds() + sessionElapsed;
+
+      if (totalElapsed > 0) {
+        await addEntry({
+          sessionType: mode(),
+          eventType: 'manual_switch',
+          timestamp: new Date().toISOString(),
+          duration: totalElapsed,
+          expectedDuration: getDurationForMode(mode()),
+          sessionNumber: mode() === 'pomodoro' ? sessionCount() + 1 : undefined,
+          activityType: mode() !== 'pomodoro' ? selectedActivity() ?? undefined : undefined,
+        }).catch(err => console.error("Failed to track manual switch:", err));
+      }
+    }
+
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
     }
     setMode(newMode);
     setIsRunning(false);
+    setStartTime(null);
+    setElapsedSeconds(0);
+
+    // Show activity dialog when manually switching to a break (or auto-set if default configured)
+    if (newMode !== 'pomodoro') {
+      setCurrentBreakType(newMode);
+      const defaultActivity = settings().defaultBreakActivity;
+      if (defaultActivity === 'ask') {
+        setShowActivityDialog(true);
+        setSelectedActivity(null);
+      } else {
+        // Use default activity without showing popup
+        setSelectedActivity(defaultActivity);
+        setShowActivityDialog(false);
+      }
+    }
+
     initializeTimer(newMode);
   };
 
   // Skip to next phase
-  const skipToNext = () => {
+  const skipToNext = async () => {
     playPopAlertSound(); // Play pop alert sound
+
+    // Track skip event - include accumulated time from pauses
+    const sessionElapsed = startTime()
+      ? Math.round((Date.now() - startTime()!) / 1000)
+      : 0;
+    const totalElapsed = elapsedSeconds() + sessionElapsed;
+
+    await addEntry({
+      sessionType: mode(),
+      eventType: 'skipped',
+      timestamp: new Date().toISOString(),
+      duration: totalElapsed,
+      expectedDuration: getDurationForMode(mode()),
+      sessionNumber: mode() === 'pomodoro' ? sessionCount() + 1 : undefined,
+      activityType: mode() !== 'pomodoro' ? selectedActivity() ?? undefined : undefined,
+    }).catch(err => console.error("Failed to track skip:", err));
 
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
     }
     setIsRunning(false);
+    setStartTime(null);
+    setElapsedSeconds(0);
 
     if (mode() === "pomodoro") {
       // Complete the pomodoro session and move to break
       const newSessionCount = sessionCount() + 1;
       setSessionCount(newSessionCount);
 
-      if (newSessionCount % settings().sessionsBeforeLongBreak === 0) {
-        switchMode("longBreak");
+      const nextMode = newSessionCount % settings().sessionsBeforeLongBreak === 0
+        ? "longBreak"
+        : "shortBreak";
+
+      // Show activity selection dialog for breaks (or auto-set if default configured)
+      setCurrentBreakType(nextMode);
+      const defaultActivity = settings().defaultBreakActivity;
+      if (defaultActivity === 'ask') {
+        setShowActivityDialog(true);
+        setSelectedActivity(null);
       } else {
-        switchMode("shortBreak");
+        // Use default activity without showing popup
+        setSelectedActivity(defaultActivity);
+        setShowActivityDialog(false);
       }
+      switchMode(nextMode);
     } else {
       // From break, go back to pomodoro
+      setSelectedActivity(null);
       switchMode("pomodoro");
     }
+  };
+
+  // Handle activity selection
+  const handleActivitySelect = (activity: ActivityType) => {
+    setSelectedActivity(activity);
+    setShowActivityDialog(false);
+  };
+
+  // Handle skip activity selection
+  const handleActivitySkip = () => {
+    setSelectedActivity(null);
+    setShowActivityDialog(false);
   };
 
   // Cleanup on unmount
@@ -183,103 +336,118 @@ function HomePage() {
   };
 
   return (
-    <div class="h-full flex flex-col items-center justify-center px-6 py-8">
-      {/* Mode Selection Tabs */}
-      <div class="flex gap-2 mb-8">
-        <button
-          class={`btn btn-sm ${mode() === "pomodoro" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
-          onClick={() => switchMode("pomodoro")}
-        >
-          Pomodoro
-        </button>
-        <button
-          class={`btn btn-sm ${mode() === "shortBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
-          onClick={() => switchMode("shortBreak")}
-        >
-          Short Break
-        </button>
-        <button
-          class={`btn btn-sm ${mode() === "longBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
-          onClick={() => switchMode("longBreak")}
-        >
-          Long Break
-        </button>
-      </div>
+    <>
+      {/* Activity Selection Dialog */}
+      <ActivitySelectionDialog
+        isOpen={showActivityDialog()}
+        breakType={currentBreakType()}
+        onSelect={handleActivitySelect}
+        onSkip={handleActivitySkip}
+      />
 
-      {/* Massive Timer Display */}
-      <div class="text-center mb-8">
-        <div class="text-9xl font-bold tabular-nums tracking-tight">
-          {formatTime(timeLeft())}
+      <div class="h-full flex flex-col items-center justify-center px-6 py-8">
+        {/* Mode Selection Tabs */}
+        <div class="flex gap-2 mb-8">
+          <button
+            class={`btn btn-sm ${mode() === "pomodoro" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
+            onClick={() => switchMode("pomodoro")}
+          >
+            Pomodoro
+          </button>
+          <button
+            class={`btn btn-sm ${mode() === "shortBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
+            onClick={() => switchMode("shortBreak")}
+          >
+            Short Break
+          </button>
+          <button
+            class={`btn btn-sm ${mode() === "longBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
+            onClick={() => switchMode("longBreak")}
+          >
+            Long Break
+          </button>
+        </div>
+
+        {/* Massive Timer Display */}
+        <div class="text-center mb-8">
+          <div class="text-9xl font-bold tabular-nums tracking-tight">
+            {formatTime(timeLeft())}
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div class="w-full max-w-md mb-8">
+          <progress
+            class="progress progress-primary w-full h-2"
+            value={getProgress()}
+            max="100"
+          />
+        </div>
+
+        {/* Control Buttons */}
+        <div class="flex justify-center gap-3 mb-6">
+          <button
+            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-lg font-semibold uppercase`}
+            onClick={toggleTimer}
+          >
+            {isRunning() ? "PAUSE" : "START"}
+          </button>
+          <button
+            class="btn btn-square btn-ghost btn-lg"
+            onClick={resetTimer}
+            title="Reset"
+          >
+            <i class="ri-restart-line text-2xl"></i>
+          </button>
+          <button
+            class="btn btn-square btn-ghost btn-lg"
+            onClick={skipToNext}
+            title="Skip to next phase"
+          >
+            <i class="ri-skip-forward-fill text-2xl"></i>
+          </button>
+        </div>
+
+        {/* Session Info - Fixed Height */}
+        <div class="h-20 flex items-center justify-center">
+          <Show
+            when={mode() === "pomodoro"}
+            fallback={
+              <div class="text-center">
+                <div class="badge badge-primary badge-lg px-6 py-4 text-base">
+                  {mode() === "shortBreak" && "Time for a short break!"}
+                  {mode() === "longBreak" && "Enjoy your long break!"}
+                </div>
+                <Show when={selectedActivity()}>
+                  <div class="text-sm opacity-70 mt-2">
+                    Activity: {selectedActivity()}
+                  </div>
+                </Show>
+              </div>
+            }
+          >
+            <div class="flex justify-center items-center gap-8 text-center">
+              <div>
+                <div class="text-xs opacity-60 uppercase mb-1">Session</div>
+                <div class="text-3xl font-bold text-primary">#{sessionCount() + 1}</div>
+              </div>
+              <div class="divider divider-horizontal m-0 h-12" />
+              <div>
+                <div class="text-xs opacity-60 uppercase mb-1">Completed</div>
+                <div class="text-3xl font-bold text-primary">{sessionCount()}</div>
+              </div>
+              <div class="divider divider-horizontal m-0 h-12" />
+              <div>
+                <div class="text-xs opacity-60 uppercase mb-1">Until Break</div>
+                <div class="text-3xl font-bold text-primary">
+                  {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
+                </div>
+              </div>
+            </div>
+          </Show>
         </div>
       </div>
-
-      {/* Progress Bar */}
-      <div class="w-full max-w-md mb-8">
-        <progress
-          class="progress progress-primary w-full h-2"
-          value={getProgress()}
-          max="100"
-        />
-      </div>
-
-      {/* Control Buttons */}
-      <div class="flex justify-center gap-3 mb-6">
-        <button
-          class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-lg font-semibold uppercase`}
-          onClick={toggleTimer}
-        >
-          {isRunning() ? "PAUSE" : "START"}
-        </button>
-        <button
-          class="btn btn-square btn-ghost btn-lg"
-          onClick={resetTimer}
-          title="Reset"
-        >
-          <i class="ri-restart-line text-2xl"></i>
-        </button>
-        <button
-          class="btn btn-square btn-ghost btn-lg"
-          onClick={skipToNext}
-          title="Skip to next phase"
-        >
-          <i class="ri-skip-forward-fill text-2xl"></i>
-        </button>
-      </div>
-
-      {/* Session Info - Fixed Height */}
-      <div class="h-20 flex items-center justify-center">
-        <Show
-          when={mode() === "pomodoro"}
-          fallback={
-            <div class="text-center">
-              <div class="badge badge-primary badge-lg px-6 py-4 text-base">
-                {mode() === "shortBreak" && "Time for a short break!"}
-                {mode() === "longBreak" && "Enjoy your long break!"}
-              </div>
-            </div>
-          }
-        >
-          <div class="flex justify-center items-center gap-8 text-center">
-            <div>
-              <div class="text-xs opacity-60 uppercase mb-1">Session</div>
-              <div class="text-3xl font-bold text-primary">#{sessionCount() + 1}</div>
-            </div>
-            <div class="divider divider-horizontal m-0 h-12" />
-            <div>
-              <div class="text-xs opacity-60 uppercase mb-1">Completed</div>
-              <div class="text-3xl font-bold text-primary">{sessionCount()}</div>
-            </div>
-            <div class="divider divider-horizontal m-0 h-12" />
-            <div>
-              <div class="text-xs opacity-60 uppercase mb-1">Until Break</div>
-              <div class="text-3xl font-bold text-primary">
-                {settings().sessionsBeforeLongBreak - (sessionCount() % settings().sessionsBeforeLongBreak)}
-              </div>
-            </div>
-          </div>
-        </Show>
-      </div>
-    </div>
+    </>
   );
 }
 

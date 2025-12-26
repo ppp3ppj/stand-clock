@@ -2,6 +2,7 @@ import Database from '@tauri-apps/plugin-sql';
 import { IUnitOfWork } from './IUnitOfWork';
 import { ITimerSettingsRepository } from './TimerSettingsRepository';
 import { SqliteTimerSettingsRepository } from './TimerSettingsRepository';
+import { ISessionHistoryRepository, SqliteSessionHistoryRepository } from './SessionHistoryRepository';
 
 /**
  * SQLite implementation of Unit of Work pattern
@@ -14,6 +15,7 @@ export class SqliteUnitOfWork implements IUnitOfWork {
 
   // Lazy-loaded repositories
   private _timerSettingsRepository?: ITimerSettingsRepository;
+  private _sessionHistoryRepository?: ISessionHistoryRepository;
 
   constructor(dbPath: string = 'sqlite:standclock.db') {
     this.dbPath = dbPath;
@@ -27,6 +29,16 @@ export class SqliteUnitOfWork implements IUnitOfWork {
       this._timerSettingsRepository = new SqliteTimerSettingsRepository(this);
     }
     return this._timerSettingsRepository;
+  }
+
+  /**
+   * Get session history repository
+   */
+  get sessionHistory(): ISessionHistoryRepository {
+    if (!this._sessionHistoryRepository) {
+      this._sessionHistoryRepository = new SqliteSessionHistoryRepository(this);
+    }
+    return this._sessionHistoryRepository;
   }
 
   async getDatabase(): Promise<Database> {
