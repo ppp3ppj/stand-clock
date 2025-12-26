@@ -419,7 +419,7 @@ function HomePage() {
         {/* Control Buttons */}
         <div class="flex justify-center gap-3 mb-6">
           <button
-            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-lg font-semibold uppercase`}
+            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-xl font-semibold uppercase min-w-[220px]`}
             onClick={toggleTimer}
           >
             {isRunning() ? "PAUSE" : "START"}
