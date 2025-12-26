@@ -8,6 +8,7 @@ interface DaySessionListProps {
   entries: SessionHistoryEntry[];
   isLoading: boolean;
   onDateSelect: (date: Date) => void;
+  hideNavigation?: boolean;
 }
 
 const DaySessionList: Component<DaySessionListProps> = (props) => {
@@ -175,10 +176,10 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
 
   return (
     <>
-      {/* Sticky Date Navigation Header */}
-      <Show when={props.date}>
-        <div class="sticky top-0 z-10 bg-base-200 py-4 mb-6 -mx-6 sm:-mx-8 px-6 sm:px-8 shadow-sm">
-          <div class="max-w-3xl mx-auto flex items-center justify-center gap-3">
+      {/* Date Navigation Header - No longer sticky, controlled by parent */}
+      <Show when={props.date && !props.hideNavigation}>
+        <div class="bg-base-100 rounded-lg p-4 mb-6 shadow-sm">
+          <div class="flex items-center justify-center gap-3">
             {/* Previous Day Button */}
             <button
               onClick={handlePrevDay}
