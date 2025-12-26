@@ -1,4 +1,4 @@
-import { Component, createSignal, Show } from 'solid-js';
+import { Component, createSignal, Show, For } from 'solid-js';
 import { useTimerSettings } from '../contexts/TimerSettingsContext';
 import { ActivityType } from '../repositories/SessionHistoryRepository';
 import notificationSound from '../assets/sounds/mixkit-notification-bell-592.wav';
@@ -13,17 +13,8 @@ const TimerSettingsPage: Component = () => {
   const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = createSignal(settings().sessionsBeforeLongBreak);
   const [soundEnabled, setSoundEnabled] = createSignal(settings().soundEnabled);
   const [defaultBreakActivity, setDefaultBreakActivity] = createSignal(settings().defaultBreakActivity);
+  const [showCyclePreview, setShowCyclePreview] = createSignal(settings().showCyclePreview);
   const [isSaving, setIsSaving] = createSignal(false);
-
-  // Update local state when settings load
-  const syncLocalState = () => {
-    setWorkDuration(settings().workDuration);
-    setShortBreakDuration(settings().shortBreakDuration);
-    setLongBreakDuration(settings().longBreakDuration);
-    setSessionsBeforeLongBreak(settings().sessionsBeforeLongBreak);
-    setSoundEnabled(settings().soundEnabled);
-    setDefaultBreakActivity(settings().defaultBreakActivity);
-  };
 
   // Watch for settings changes
   const hasChanges = () => {
@@ -33,7 +24,8 @@ const TimerSettingsPage: Component = () => {
       longBreakDuration() !== settings().longBreakDuration ||
       sessionsBeforeLongBreak() !== settings().sessionsBeforeLongBreak ||
       soundEnabled() !== settings().soundEnabled ||
-      defaultBreakActivity() !== settings().defaultBreakActivity
+      defaultBreakActivity() !== settings().defaultBreakActivity ||
+      showCyclePreview() !== settings().showCyclePreview
     );
   };
 
@@ -46,437 +38,324 @@ const TimerSettingsPage: Component = () => {
       sessionsBeforeLongBreak: sessionsBeforeLongBreak(),
       soundEnabled: soundEnabled(),
       defaultBreakActivity: defaultBreakActivity(),
+      showCyclePreview: showCyclePreview(),
     });
     setIsSaving(false);
   };
 
   const handleReset = async () => {
-    if (confirm('Are you sure you want to reset to default settings?')) {
+    if (confirm('Reset to default settings?')) {
       await resetToDefaults();
-      syncLocalState();
+      setWorkDuration(settings().workDuration);
+      setShortBreakDuration(settings().shortBreakDuration);
+      setLongBreakDuration(settings().longBreakDuration);
+      setSessionsBeforeLongBreak(settings().sessionsBeforeLongBreak);
+      setSoundEnabled(settings().soundEnabled);
+      setDefaultBreakActivity(settings().defaultBreakActivity);
+      setShowCyclePreview(settings().showCyclePreview);
     }
   };
 
-  // Test notification sound
   const playTestSound = () => {
     const audio = new Audio(notificationSound);
     audio.volume = 0.6;
-    audio.play().catch(err => console.log("Test sound play failed:", err));
+    audio.play().catch(err => console.log("Test sound failed:", err));
   };
 
-  const workPresets = [15, 25, 45, 50, 55];
-  const shortBreakPresets = [3, 5, 7, 10];
-  const longBreakPresets = [10, 15, 20, 30];
-
-  const formatTime = (minutes: number) => {
-    const mins = Math.floor(minutes);
-    const secs = Math.round((minutes - mins) * 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  // Generate timeline data
+  const timelineData = () => {
+    const items = [];
+    for (let i = 0; i < sessionsBeforeLongBreak(); i++) {
+      items.push({ type: 'work', number: i + 1 });
+      if (i < sessionsBeforeLongBreak() - 1) {
+        items.push({ type: 'short' });
+      }
+    }
+    items.push({ type: 'long' });
+    return items;
   };
 
   return (
     <div class="h-full flex flex-col">
-      <div class="flex-none bg-base-200/50 px-8 py-6 border-b border-base-300">
-        <h1 class="text-3xl font-bold mb-1">Timer Settings</h1>
-        <p class="text-base-content/70">Customize your work and break durations</p>
+      {/* Header - Sticky */}
+      <div class="flex-none bg-base-200 px-6 sm:px-8 py-6 shadow-sm">
+        <div class="max-w-4xl mx-auto">
+          <h1 class="text-3xl sm:text-4xl font-bold mb-2">Timer Settings</h1>
+          <p class="text-base-content/60">Customize your work and break durations</p>
+        </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+      {/* Content - Scrollable */}
+      <div class="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
         <Show when={!isLoading()} fallback={
           <div class="flex justify-center items-center h-full">
             <span class="loading loading-spinner loading-lg"></span>
           </div>
         }>
-          <div class="px-8 py-6">
-            <div class="max-w-4xl mx-auto space-y-6">
-          {/* Work Session Duration */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h2 class="card-title text-2xl mb-1">Work Session Duration</h2>
-                  <p class="text-sm text-base-content/70">Time spent working before a break</p>
-                </div>
-                <div class="badge badge-primary badge-lg">{workDuration()} min</div>
-              </div>
+          <div class="max-w-4xl mx-auto space-y-6">
 
-              {/* Quick Presets */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Quick Presets</span>
-                </label>
-                <div class="flex flex-wrap gap-2">
-                  {workPresets.map(preset => (
-                    <button
-                      class={`btn ${workDuration() === preset ? 'btn-primary' : 'btn-outline btn-primary'}`}
-                      onClick={() => setWorkDuration(preset)}
-                    >
-                      {preset} min
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Timer Durations - Simplified Card */}
+            <div class="card bg-base-100 shadow-md">
+              <div class="card-body p-4 sm:p-6">
+                <h2 class="card-title text-xl mb-4">Timer Durations</h2>
 
-              {/* Custom Range Slider */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Custom Duration</span>
-                  <span class="label-text-alt">{formatTime(workDuration())}</span>
-                </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="120"
-                  value={workDuration()}
-                  class="range range-primary"
-                  step="5"
-                  onInput={(e) => setWorkDuration(parseInt(e.currentTarget.value))}
-                />
-                <div class="flex justify-between text-xs px-2 mt-1 text-base-content/60">
-                  <span>5 min</span>
-                  <span>60 min</span>
-                  <span>120 min</span>
-                </div>
-              </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Work Duration */}
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-semibold">Work</span>
+                      <span class="label-text-alt badge badge-primary">{workDuration()} min</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="5"
+                      max="120"
+                      value={workDuration()}
+                      class="range range-primary range-sm"
+                      step="5"
+                      onInput={(e) => setWorkDuration(parseInt(e.currentTarget.value))}
+                    />
+                    <div class="flex justify-between text-xs mt-1 px-1 opacity-60">
+                      <span>5</span>
+                      <span>120</span>
+                    </div>
+                  </div>
 
-              {/* Recommendation Badge */}
-              <div class="alert alert-info">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-sm">Recommended: 25-55 min based on research</span>
+                  {/* Short Break Duration */}
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-semibold">Short Break</span>
+                      <span class="label-text-alt badge badge-secondary">{shortBreakDuration()} min</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="15"
+                      value={shortBreakDuration()}
+                      class="range range-secondary range-sm"
+                      step="1"
+                      onInput={(e) => setShortBreakDuration(parseInt(e.currentTarget.value))}
+                    />
+                    <div class="flex justify-between text-xs mt-1 px-1 opacity-60">
+                      <span>1</span>
+                      <span>15</span>
+                    </div>
+                  </div>
+
+                  {/* Long Break Duration */}
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-semibold">Long Break</span>
+                      <span class="label-text-alt badge badge-accent">{longBreakDuration()} min</span>
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="30"
+                      value={longBreakDuration()}
+                      class="range range-accent range-sm"
+                      step="5"
+                      onInput={(e) => setLongBreakDuration(parseInt(e.currentTarget.value))}
+                    />
+                    <div class="flex justify-between text-xs mt-1 px-1 opacity-60">
+                      <span>10</span>
+                      <span>30</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Short Break Duration */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h2 class="card-title text-2xl mb-1">Short Break Duration</h2>
-                  <p class="text-sm text-base-content/70">Quick standing/stretching break</p>
-                </div>
-                <div class="badge badge-secondary badge-lg">{shortBreakDuration()} min</div>
-              </div>
-
-              {/* Quick Presets */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Quick Presets</span>
-                </label>
-                <div class="flex flex-wrap gap-2">
-                  {shortBreakPresets.map(preset => (
-                    <button
-                      class={`btn ${shortBreakDuration() === preset ? 'btn-secondary' : 'btn-outline btn-secondary'}`}
-                      onClick={() => setShortBreakDuration(preset)}
-                    >
-                      {preset} min
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Range Slider */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Custom Duration</span>
-                  <span class="label-text-alt">{formatTime(shortBreakDuration())}</span>
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="15"
-                  value={shortBreakDuration()}
-                  class="range range-secondary"
-                  step="1"
-                  onInput={(e) => setShortBreakDuration(parseInt(e.currentTarget.value))}
-                />
-                <div class="flex justify-between text-xs px-2 mt-1 text-base-content/60">
-                  <span>1 min</span>
-                  <span>8 min</span>
-                  <span>15 min</span>
-                </div>
-              </div>
-
-              {/* Purpose Info */}
-              <div class="alert alert-success">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-sm">Purpose: Quick posture reset, eye rest, light stretching</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Long Break Duration */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h2 class="card-title text-2xl mb-1">Long Break Duration</h2>
-                  <p class="text-sm text-base-content/70">Extended break for deeper exercises</p>
-                </div>
-                <div class="badge badge-accent badge-lg">{longBreakDuration()} min</div>
-              </div>
-
-              {/* Quick Presets */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Quick Presets</span>
-                </label>
-                <div class="flex flex-wrap gap-2">
-                  {longBreakPresets.map(preset => (
-                    <button
-                      class={`btn ${longBreakDuration() === preset ? 'btn-accent' : 'btn-outline btn-accent'}`}
-                      onClick={() => setLongBreakDuration(preset)}
-                    >
-                      {preset} min
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom Range Slider */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Custom Duration</span>
-                  <span class="label-text-alt">{formatTime(longBreakDuration())}</span>
-                </label>
-                <input
-                  type="range"
-                  min="10"
-                  max="30"
-                  value={longBreakDuration()}
-                  class="range range-accent"
-                  step="5"
-                  onInput={(e) => setLongBreakDuration(parseInt(e.currentTarget.value))}
-                />
-                <div class="flex justify-between text-xs px-2 mt-1 text-base-content/60">
-                  <span>10 min</span>
-                  <span>20 min</span>
-                  <span>30 min</span>
-                </div>
-              </div>
-
-              {/* Purpose Info */}
-              <div class="alert alert-warning">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <span class="text-sm">Purpose: Full exercise routine, walking, lunch break</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Sessions Before Long Break */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h2 class="card-title text-2xl mb-1">Sessions Before Long Break</h2>
-                  <p class="text-sm text-base-content/70">Number of work sessions before taking a long break</p>
-                </div>
-                <div class="badge badge-neutral badge-lg">{sessionsBeforeLongBreak()} sessions</div>
-              </div>
-
-              {/* Session Counter Buttons */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Select Sessions</span>
-                </label>
-                <div class="flex flex-wrap gap-2">
-                  {[2, 3, 4, 5, 6, 8].map(count => (
-                    <button
-                      class={`btn ${sessionsBeforeLongBreak() === count ? 'btn-neutral' : 'btn-outline btn-neutral'}`}
-                      onClick={() => setSessionsBeforeLongBreak(count)}
-                    >
-                      {count}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Progress Visualization */}
-              <div class="mb-4">
-                <label class="label">
-                  <span class="label-text font-semibold">Progress Preview</span>
-                  <span class="label-text-alt">Example cycle</span>
-                </label>
-                <div class="flex items-center gap-2 flex-wrap">
-                  {Array.from({ length: sessionsBeforeLongBreak() }).map((_, index) => (
-                    <>
-                      <div class="badge badge-primary badge-lg gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        Work
+            {/* Sessions & Cycle Preview */}
+            <div class="card bg-base-100 shadow-md">
+              <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                  <h2 class="card-title text-xl">Cycle Configuration</h2>
+                  <div class="stats stats-horizontal shadow bg-base-200 text-sm">
+                    <div class="stat py-2 px-4">
+                      <div class="stat-title text-xs">Sessions</div>
+                      <div class="stat-value text-2xl">{sessionsBeforeLongBreak()}</div>
+                    </div>
+                    <div class="stat py-2 px-4">
+                      <div class="stat-title text-xs">Cycle Time</div>
+                      <div class="stat-value text-2xl">
+                        {Math.floor((workDuration() * sessionsBeforeLongBreak() +
+                                     shortBreakDuration() * (sessionsBeforeLongBreak() - 1) +
+                                     longBreakDuration()) / 60)}h
                       </div>
-                      {index < sessionsBeforeLongBreak() - 1 && (
-                        <>
-                          <span class="text-base-content/50">→</span>
-                          <div class="badge badge-secondary">Short Break</div>
-                          <span class="text-base-content/50">→</span>
-                        </>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sessions Before Long Break */}
+                <div class="form-control mb-6">
+                  <label class="label">
+                    <span class="label-text font-semibold">Work sessions before long break</span>
+                  </label>
+                  <div class="flex flex-wrap gap-2">
+                    <For each={[2, 3, 4, 5, 6, 8]}>
+                      {(count) => (
+                        <button
+                          class={`btn btn-sm ${sessionsBeforeLongBreak() === count ? 'btn-neutral' : 'btn-outline btn-neutral'}`}
+                          onClick={() => setSessionsBeforeLongBreak(count)}
+                        >
+                          {count}
+                        </button>
                       )}
-                    </>
-                  ))}
-                  <span class="text-base-content/50">→</span>
-                  <div class="badge badge-accent badge-lg gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Long Break
+                    </For>
+                  </div>
+                </div>
+
+                {/* Cycle Preview Toggle */}
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-3">
+                    <input
+                      type="checkbox"
+                      class="toggle toggle-sm"
+                      checked={showCyclePreview()}
+                      onChange={(e) => setShowCyclePreview(e.currentTarget.checked)}
+                    />
+                    <span class="label-text font-semibold">Show Cycle Preview</span>
+                  </label>
+                </div>
+
+                {/* Cycle Preview - Vertical Timeline */}
+                <Show when={showCyclePreview()}>
+                  <div class="form-control mt-4">
+                    <div class="bg-base-200 rounded-lg p-4">
+                      <ul class="timeline timeline-vertical timeline-compact">
+                        <For each={timelineData()}>
+                          {(item) => (
+                            <li>
+                              <div class="timeline-start text-xs opacity-60 w-16 text-right pr-2">
+                                {item.type === 'work' ? workDuration() : item.type === 'short' ? shortBreakDuration() : longBreakDuration()}m
+                              </div>
+                              <div class="timeline-middle">
+                                <div class={`w-3 h-3 rounded-full ${item.type === 'work' ? 'bg-primary' : item.type === 'short' ? 'bg-secondary' : 'bg-accent'}`}></div>
+                              </div>
+                              <div class={`timeline-end timeline-box text-xs mb-4 ${item.type === 'work' ? 'bg-primary text-primary-content' : item.type === 'short' ? 'bg-secondary text-secondary-content' : 'bg-accent text-accent-content'}`}>
+                                {item.type === 'work' ? (
+                                  <>
+                                    <i class="ri-focus-line"></i> Work #{item.number}
+                                  </>
+                                ) : item.type === 'short' ? (
+                                  <>
+                                    <i class="ri-cup-line"></i> Short Break
+                                  </>
+                                ) : (
+                                  <>
+                                    <i class="ri-restaurant-line"></i> Long Break
+                                  </>
+                                )}
+                              </div>
+                              <hr class={item.type === 'work' ? 'bg-primary' : item.type === 'short' ? 'bg-secondary' : 'bg-accent'} />
+                            </li>
+                          )}
+                        </For>
+                      </ul>
+                    </div>
+                  </div>
+                </Show>
+              </div>
+            </div>
+
+            {/* Preferences */}
+            <div class="card bg-base-100 shadow-md">
+              <div class="card-body p-4 sm:p-6">
+                <h2 class="card-title text-xl mb-4">Preferences</h2>
+
+                <div class="space-y-6">
+                  {/* Sound Notifications */}
+                  <div class="form-control">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div class="flex items-center gap-4">
+                        <input
+                          type="checkbox"
+                          class="toggle toggle-primary"
+                          checked={soundEnabled()}
+                          onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
+                        />
+                        <div>
+                          <span class="label-text font-semibold block">Sound Notifications</span>
+                          <span class="label-text-alt opacity-60">Play sound when timer ends</span>
+                        </div>
+                      </div>
+                      <Show when={soundEnabled()}>
+                        <button
+                          class="btn btn-sm btn-outline gap-2"
+                          onClick={playTestSound}
+                        >
+                          <i class="ri-volume-up-line"></i>
+                          Test Sound
+                        </button>
+                      </Show>
+                    </div>
+                  </div>
+
+                  <div class="divider my-0"></div>
+
+                  {/* Default Break Activity */}
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-semibold">Default Break Activity</span>
+                      <span class="label-text-alt opacity-60">
+                        {defaultBreakActivity() === 'ask' ? 'Show popup' : 'Auto-set'}
+                      </span>
+                    </label>
+                    <select
+                      class="select select-bordered w-full"
+                      value={defaultBreakActivity()}
+                      onChange={(e) => setDefaultBreakActivity(e.currentTarget.value as ActivityType | 'ask')}
+                    >
+                      <option value="ask">Ask every time</option>
+                      <option value="stretch">🧘 Stretch</option>
+                      <option value="walk">🚶 Walk</option>
+                      <option value="exercise">🏃 Exercise</option>
+                      <option value="hydrate">☕ Hydrate</option>
+                      <option value="rest">😴 Rest</option>
+                      <option value="other">⚙️ Other</option>
+                    </select>
                   </div>
                 </div>
               </div>
-
-              {/* Info */}
-              <div class="stats shadow bg-base-100">
-                <div class="stat">
-                  <div class="stat-title">Total Cycle Time</div>
-                  <div class="stat-value text-2xl">
-                    {workDuration() * sessionsBeforeLongBreak() +
-                     shortBreakDuration() * (sessionsBeforeLongBreak() - 1) +
-                     longBreakDuration()} min
-                  </div>
-                  <div class="stat-desc">
-                    {Math.floor((workDuration() * sessionsBeforeLongBreak() +
-                     shortBreakDuration() * (sessionsBeforeLongBreak() - 1) +
-                     longBreakDuration()) / 60)}h {(workDuration() * sessionsBeforeLongBreak() +
-                     shortBreakDuration() * (sessionsBeforeLongBreak() - 1) +
-                     longBreakDuration()) % 60}m per complete cycle
-                  </div>
-                </div>
-              </div>
             </div>
-          </div>
 
-          {/* Sound Notification Settings */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h2 class="card-title text-2xl mb-1">Sound Notification</h2>
-                  <p class="text-sm text-base-content/70">Play a sound when timer completes</p>
-                </div>
-              </div>
-
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-4">
-                  <input
-                    type="checkbox"
-                    class="toggle toggle-primary toggle-lg"
-                    checked={soundEnabled()}
-                    onChange={(e) => setSoundEnabled(e.currentTarget.checked)}
-                  />
-                  <span class="label-text text-lg">
-                    {soundEnabled() ? 'Enabled' : 'Disabled'}
-                  </span>
-                </label>
-              </div>
-
-              <div class="alert alert-info mt-4">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-sm">A notification sound will play when your work session or break ends</span>
-              </div>
-
-              <Show when={soundEnabled()}>
-                <div class="mt-4">
-                  <button
-                    class="btn btn-outline btn-primary gap-2"
-                    onClick={playTestSound}
-                  >
-                    <i class="ri-volume-up-line text-xl"></i>
-                    Test Sound
-                  </button>
-                </div>
-              </Show>
-            </div>
-          </div>
-
-          {/* Default Break Activity */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <div class="flex items-start justify-between mb-4">
-                <div>
-                  <h2 class="card-title text-2xl mb-1">Default Break Activity</h2>
-                  <p class="text-sm text-base-content/70">Set a default activity to skip the popup during breaks</p>
-                </div>
-              </div>
-
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Activity Preference</span>
-                </label>
-                <select
-                  class="select select-bordered select-lg w-full"
-                  value={defaultBreakActivity()}
-                  onChange={(e) => setDefaultBreakActivity(e.currentTarget.value as any)}
-                >
-                  <option value="ask">Ask me every time (Show popup)</option>
-                  <option value="stretch">🧘 Stretch - Always use stretching</option>
-                  <option value="walk">🚶 Walk - Always use walking</option>
-                  <option value="exercise">🏃 Exercise - Always use exercise</option>
-                  <option value="hydrate">☕ Hydrate - Always use hydration</option>
-                  <option value="rest">😴 Rest - Always use resting</option>
-                  <option value="other">⚙️ Other - Always use other</option>
-                </select>
-              </div>
-
-              <div class={`alert ${defaultBreakActivity() === 'ask' ? 'alert-info' : 'alert-success'} mt-4`}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-sm">
-                  {defaultBreakActivity() === 'ask'
-                    ? 'A popup will ask you to select an activity when each break starts'
-                    : `Breaks will automatically use "${defaultBreakActivity()}" activity without showing the popup`
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Save/Reset Buttons */}
-          <div class="card bg-base-200 shadow-xl">
-            <div class="card-body">
-              <Show when={hasChanges()}>
-                <div class="alert alert-warning mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                  </svg>
-                  <span>You have unsaved changes</span>
-                </div>
-              </Show>
-
-              <div class="flex gap-3 justify-end">
-                <button
-                  class="btn btn-ghost"
-                  onClick={handleReset}
-                >
-                  Reset to Defaults
-                </button>
-                <button
-                  class="btn btn-primary btn-lg"
-                  onClick={handleSave}
-                  disabled={!hasChanges() || isSaving()}
-                >
-                  <Show when={isSaving()} fallback={
-                    <i class="ri-check-line text-2xl"></i>
-                  }>
-                    <span class="loading loading-spinner"></span>
-                  </Show>
-                  Save Settings
-                </button>
-              </div>
-            </div>
-          </div>
-            </div>
           </div>
         </Show>
+      </div>
+
+      {/* Footer - Sticky Actions */}
+      <div class="flex-none bg-base-200 px-6 sm:px-8 py-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] border-t border-base-300">
+        <div class="max-w-4xl mx-auto">
+          <Show when={hasChanges()}>
+            <div class="alert alert-warning mb-3 py-2">
+              <i class="ri-error-warning-line text-lg"></i>
+              <span class="text-sm">You have unsaved changes</span>
+            </div>
+          </Show>
+
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
+            <button
+              class="btn btn-outline btn-sm sm:btn-md"
+              onClick={handleReset}
+            >
+              <i class="ri-restart-line"></i>
+              Reset to Defaults
+            </button>
+            <button
+              class="btn btn-primary btn-sm sm:btn-md"
+              onClick={handleSave}
+              disabled={!hasChanges() || isSaving()}
+            >
+              <Show when={isSaving()} fallback={
+                <i class="ri-save-line"></i>
+              }>
+                <span class="loading loading-spinner loading-sm"></span>
+              </Show>
+              Save Settings
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

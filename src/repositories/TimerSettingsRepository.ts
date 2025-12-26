@@ -8,6 +8,7 @@ export interface TimerSettings {
   sessionsBeforeLongBreak: number;
   soundEnabled: boolean;
   defaultBreakActivity: ActivityType | 'ask'; // 'ask' means show popup
+  showCyclePreview: boolean;
 }
 
 export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
@@ -17,6 +18,7 @@ export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   sessionsBeforeLongBreak: 4,
   soundEnabled: true,
   defaultBreakActivity: 'ask',
+  showCyclePreview: true,
 };
 
 /**
@@ -56,6 +58,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
         sessions_before_long_break: number;
         sound_enabled?: number;
         default_break_activity?: string;
+        show_cycle_preview?: number;
       }>>("SELECT * FROM timer_settings WHERE id = 1");
 
       if (result.length > 0) {
@@ -67,6 +70,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           sessionsBeforeLongBreak: row.sessions_before_long_break,
           soundEnabled: row.sound_enabled !== undefined ? Boolean(row.sound_enabled) : true,
           defaultBreakActivity: (row.default_break_activity as ActivityType | 'ask') || 'ask',
+          showCyclePreview: row.show_cycle_preview !== undefined ? Boolean(row.show_cycle_preview) : true,
         };
       }
 
@@ -88,6 +92,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
              sessions_before_long_break = $4,
              sound_enabled = $5,
              default_break_activity = $6,
+             show_cycle_preview = $7,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = 1`,
         [
@@ -97,6 +102,7 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           settings.sessionsBeforeLongBreak,
           settings.soundEnabled ? 1 : 0,
           settings.defaultBreakActivity,
+          settings.showCyclePreview ? 1 : 0,
         ]
       );
       console.log("[SqliteTimerSettingsRepository] Settings saved successfully");
