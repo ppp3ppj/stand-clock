@@ -23,6 +23,7 @@ function HomePage() {
   const [showActivityDialog, setShowActivityDialog] = createSignal(false);
   const [currentBreakType, setCurrentBreakType] = createSignal<'shortBreak' | 'longBreak'>('shortBreak');
   const [selectedActivity, setSelectedActivity] = createSignal<ActivityType | null>(null);
+  const [modeChangeKey, setModeChangeKey] = createSignal(0); // Trigger animation on mode change
 
   let intervalId: number | null = null;
 
@@ -233,6 +234,7 @@ function HomePage() {
       intervalId = null;
     }
     setMode(newMode);
+    setModeChangeKey(prev => prev + 1); // Trigger animation
     setIsRunning(false);
     setStartTime(null);
     setElapsedSeconds(0);
@@ -354,19 +356,19 @@ function HomePage() {
         {/* Mode Selection Tabs */}
         <div class="flex gap-2 mb-8">
           <button
-            class={`btn btn-sm ${mode() === "pomodoro" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
+            class={`btn btn-sm ${mode() === "pomodoro" ? "btn-primary" : "btn-ghost"} normal-case px-6 transition-all duration-300`}
             onClick={() => switchMode("pomodoro")}
           >
             Pomodoro
           </button>
           <button
-            class={`btn btn-sm ${mode() === "shortBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
+            class={`btn btn-sm ${mode() === "shortBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6 transition-all duration-300`}
             onClick={() => switchMode("shortBreak")}
           >
             Short Break
           </button>
           <button
-            class={`btn btn-sm ${mode() === "longBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6`}
+            class={`btn btn-sm ${mode() === "longBreak" ? "btn-primary" : "btn-ghost"} normal-case px-6 transition-all duration-300`}
             onClick={() => switchMode("longBreak")}
           >
             Long Break
@@ -375,7 +377,15 @@ function HomePage() {
 
         {/* Massive Timer Display */}
         <div class="text-center mb-8">
-          <div class="text-9xl font-bold tabular-nums tracking-tight">
+          <div
+            class="text-9xl font-bold tabular-nums tracking-tight"
+            classList={{
+              'animate-timerPulse': modeChangeKey() > 0
+            }}
+            style={{
+              transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out'
+            }}
+          >
             {formatTime(timeLeft())}
           </div>
         </div>
@@ -383,7 +393,7 @@ function HomePage() {
         {/* Progress Bar */}
         <div class="w-full max-w-md mb-8">
           <progress
-            class="progress progress-primary w-full h-2"
+            class="progress progress-primary w-full h-2 transition-all duration-300"
             value={getProgress()}
             max="100"
           />
@@ -392,20 +402,20 @@ function HomePage() {
         {/* Control Buttons */}
         <div class="flex justify-center gap-3 mb-6">
           <button
-            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-lg font-semibold uppercase`}
+            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-lg font-semibold uppercase transition-all duration-300`}
             onClick={toggleTimer}
           >
             {isRunning() ? "PAUSE" : "START"}
           </button>
           <button
-            class="btn btn-square btn-ghost btn-lg"
+            class="btn btn-square btn-ghost btn-lg transition-all duration-200 hover:scale-110 active:scale-95"
             onClick={resetTimer}
             title="Reset"
           >
             <i class="ri-restart-line text-2xl"></i>
           </button>
           <button
-            class="btn btn-square btn-ghost btn-lg"
+            class="btn btn-square btn-ghost btn-lg transition-all duration-200 hover:scale-110 active:scale-95"
             onClick={skipToNext}
             title="Skip to next phase"
           >
@@ -414,7 +424,7 @@ function HomePage() {
         </div>
 
         {/* Session Info - Fixed Height */}
-        <div class="h-20 flex items-center justify-center">
+        <div class="h-20 flex items-center justify-center transition-all duration-500">
           <Show
             when={mode() === "pomodoro"}
             fallback={
