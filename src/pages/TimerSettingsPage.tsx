@@ -13,8 +13,8 @@ const TimerSettingsPage: Component = () => {
   const [sessionsBeforeLongBreak, setSessionsBeforeLongBreak] = createSignal(settings().sessionsBeforeLongBreak);
   const [soundEnabled, setSoundEnabled] = createSignal(settings().soundEnabled);
   const [defaultBreakActivity, setDefaultBreakActivity] = createSignal(settings().defaultBreakActivity);
+  const [showCyclePreview, setShowCyclePreview] = createSignal(settings().showCyclePreview);
   const [isSaving, setIsSaving] = createSignal(false);
-  const [showCyclePreview, setShowCyclePreview] = createSignal(true);
 
   // Watch for settings changes
   const hasChanges = () => {
@@ -24,7 +24,8 @@ const TimerSettingsPage: Component = () => {
       longBreakDuration() !== settings().longBreakDuration ||
       sessionsBeforeLongBreak() !== settings().sessionsBeforeLongBreak ||
       soundEnabled() !== settings().soundEnabled ||
-      defaultBreakActivity() !== settings().defaultBreakActivity
+      defaultBreakActivity() !== settings().defaultBreakActivity ||
+      showCyclePreview() !== settings().showCyclePreview
     );
   };
 
@@ -37,6 +38,7 @@ const TimerSettingsPage: Component = () => {
       sessionsBeforeLongBreak: sessionsBeforeLongBreak(),
       soundEnabled: soundEnabled(),
       defaultBreakActivity: defaultBreakActivity(),
+      showCyclePreview: showCyclePreview(),
     });
     setIsSaving(false);
   };
@@ -50,6 +52,7 @@ const TimerSettingsPage: Component = () => {
       setSessionsBeforeLongBreak(settings().sessionsBeforeLongBreak);
       setSoundEnabled(settings().soundEnabled);
       setDefaultBreakActivity(settings().defaultBreakActivity);
+      setShowCyclePreview(settings().showCyclePreview);
     }
   };
 

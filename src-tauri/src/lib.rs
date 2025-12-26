@@ -55,6 +55,12 @@ pub fn run() {
             description: "add default_break_activity to timer_settings",
             sql: "ALTER TABLE timer_settings ADD COLUMN default_break_activity TEXT DEFAULT 'ask' CHECK (default_break_activity IN ('ask', 'stretch', 'walk', 'exercise', 'hydrate', 'rest', 'other'));",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 5,
+            description: "add show_cycle_preview to timer_settings",
+            sql: "ALTER TABLE timer_settings ADD COLUMN show_cycle_preview INTEGER NOT NULL DEFAULT 1;",
+            kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()
