@@ -7,7 +7,11 @@ interface DaySessionListProps {
   date: Date | null;
   entries: SessionHistoryEntry[];
   isLoading: boolean;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  totalCount: number;
   onDateSelect: (date: Date) => void;
+  onLoadMore: () => void;
 }
 
 const DaySessionList: Component<DaySessionListProps> = (props) => {
@@ -318,6 +322,30 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
                   </div>
                 )}
               </For>
+
+              {/* Load More Button */}
+              <Show when={props.hasMore}>
+                <div class="flex justify-center pt-4">
+                  <button
+                    onClick={props.onLoadMore}
+                    class="btn btn-outline btn-wide gap-2"
+                    disabled={props.isLoadingMore}
+                  >
+                    <Show
+                      when={!props.isLoadingMore}
+                      fallback={
+                        <>
+                          <span class="loading loading-spinner loading-sm"></span>
+                          Loading...
+                        </>
+                      }
+                    >
+                      <i class="ri-arrow-down-line"></i>
+                      Load More ({props.entries.length} of {props.totalCount})
+                    </Show>
+                  </button>
+                </div>
+              </Show>
             </div>
           </Show>
         </Show>

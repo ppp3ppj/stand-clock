@@ -17,6 +17,9 @@ interface SessionHistoryContextValue {
   daySessionCounts: () => Map<string, number>;
   selectedDayEntries: () => SessionHistoryEntry[];
   isLoadingDay: () => boolean;
+  hasMore: () => boolean;
+  isLoadingMore: () => boolean;
+  totalCount: () => number;
 
   // Operations
   addEntry: (entry: Omit<SessionHistoryEntry, 'id'>) => Promise<void>;
@@ -24,6 +27,7 @@ interface SessionHistoryContextValue {
   clearAll: () => Promise<void>;
   loadMonthSummary: (date: Date) => Promise<void>;
   loadDayEntries: (date: Date) => Promise<void>;
+  loadMoreEntries: () => Promise<void>;
 }
 
 const SessionHistoryContext = createContext<SessionHistoryContextValue>();
@@ -45,6 +49,10 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
   const [daySessionCounts, setDaySessionCounts] = createSignal<Map<string, number>>(new Map());
   const [selectedDayEntries, setSelectedDayEntries] = createSignal<SessionHistoryEntry[]>([]);
   const [isLoadingDay, setIsLoadingDay] = createSignal(false);
+  const [isLoadingMore, setIsLoadingMore] = createSignal(false);
+  const [totalCount, setTotalCount] = createSignal(0);
+  const [currentOffset, setCurrentOffset] = createSignal(0);
+  const PAGE_SIZE = 10;
 
   const loadMonthSummary = async (date: Date) => {
     setIsLoading(true);
@@ -61,11 +69,16 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
 
   const loadDayEntries = async (date: Date) => {
     setIsLoadingDay(true);
+    setCurrentOffset(0);
     const startTime = Date.now();
     const minLoadingTime = 400; // Minimum 400ms to show skeleton
 
     try {
-      const entries = await unitOfWork.sessionHistory.getByDate(date);
+      // Load first page and total count in parallel
+      const [entries, count] = await Promise.all([
+        unitOfWork.sessionHistory.getByDatePaginated(date, PAGE_SIZE, 0),
+        unitOfWork.sessionHistory.getCountByDate(date)
+      ]);
 
       // Calculate remaining time to meet minimum loading duration
       const elapsedTime = Date.now() - startTime;
@@ -77,11 +90,38 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
       }
 
       setSelectedDayEntries(entries);
+      setTotalCount(count);
+      setCurrentOffset(entries.length);
     } catch (error) {
       console.error("[SessionHistoryContext] Failed to load day entries:", error);
     } finally {
       setIsLoadingDay(false);
     }
+  };
+
+  const loadMoreEntries = async () => {
+    const date = selectedDate();
+    if (!date || isLoadingMore() || !hasMore()) return;
+
+    setIsLoadingMore(true);
+    try {
+      const moreEntries = await unitOfWork.sessionHistory.getByDatePaginated(
+        date,
+        PAGE_SIZE,
+        currentOffset()
+      );
+
+      setSelectedDayEntries(prev => [...prev, ...moreEntries]);
+      setCurrentOffset(prev => prev + moreEntries.length);
+    } catch (error) {
+      console.error("[SessionHistoryContext] Failed to load more entries:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const hasMore = () => {
+    return selectedDayEntries().length < totalCount();
   };
 
   // Auto-load month summary when currentMonth changes
@@ -162,6 +202,9 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
     daySessionCounts,
     selectedDayEntries,
     isLoadingDay,
+    hasMore,
+    isLoadingMore,
+    totalCount,
 
     // Operations
     addEntry,
@@ -169,6 +212,7 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
     clearAll,
     loadMonthSummary,
     loadDayEntries,
+    loadMoreEntries,
   };
 
   return (

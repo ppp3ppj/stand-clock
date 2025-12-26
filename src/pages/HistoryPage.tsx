@@ -9,7 +9,11 @@ const HistoryPage: Component = () => {
     setCurrentMonth,
     selectedDayEntries,
     isLoadingDay,
-    clearAll
+    hasMore,
+    isLoadingMore,
+    totalCount,
+    clearAll,
+    loadMoreEntries
   } = useSessionHistory();
 
   // Auto-select today on mount
@@ -49,10 +53,14 @@ const HistoryPage: Component = () => {
             date={selectedDate()}
             entries={selectedDayEntries()}
             isLoading={isLoadingDay()}
+            hasMore={hasMore()}
+            isLoadingMore={isLoadingMore()}
+            totalCount={totalCount()}
             onDateSelect={(date) => {
               setSelectedDate(date);
               setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
             }}
+            onLoadMore={loadMoreEntries}
           />
         </div>
       </div>

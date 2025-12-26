@@ -71,6 +71,16 @@ export interface ISessionHistoryRepository {
    * Get all entries for a specific date
    */
   getByDate(date: Date): Promise<SessionHistoryEntry[]>;
+
+  /**
+   * Get entries for a specific date with pagination
+   */
+  getByDatePaginated(date: Date, limit: number, offset: number): Promise<SessionHistoryEntry[]>;
+
+  /**
+   * Get total count of entries for a specific date
+   */
+  getCountByDate(date: Date): Promise<number>;
 }
 
 export class SqliteSessionHistoryRepository implements ISessionHistoryRepository {
@@ -231,6 +241,58 @@ export class SqliteSessionHistoryRepository implements ISessionHistoryRepository
     const endOfDay = new Date(startOfDay);
     endOfDay.setDate(endOfDay.getDate() + 1);
     return this.getByDateRange(startOfDay, endOfDay);
+  }
+
+  async getByDatePaginated(date: Date, limit: number, offset: number): Promise<SessionHistoryEntry[]> {
+    try {
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(startOfDay);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+
+      const db = await this.unitOfWork.getDatabase();
+      const result = await db.select<Array<{
+        id: number;
+        session_type: string;
+        event_type: string;
+        timestamp: string;
+        duration: number;
+        expected_duration: number;
+        session_number: number | null;
+        activity_type: string | null;
+      }>>(
+        `SELECT * FROM session_history
+         WHERE timestamp >= $1 AND timestamp < $2
+         ORDER BY timestamp DESC
+         LIMIT $3 OFFSET $4`,
+        [startOfDay.toISOString(), endOfDay.toISOString(), limit, offset]
+      );
+
+      console.log(`[SessionHistoryRepository] Loaded ${result.length} entries (limit: ${limit}, offset: ${offset})`);
+      return this.mapRows(result);
+    } catch (error) {
+      console.error("[SessionHistoryRepository] Failed to get paginated entries:", error);
+      throw error;
+    }
+  }
+
+  async getCountByDate(date: Date): Promise<number> {
+    try {
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(startOfDay);
+      endOfDay.setDate(endOfDay.getDate() + 1);
+
+      const db = await this.unitOfWork.getDatabase();
+      const result = await db.select<Array<{ count: number }>>(
+        `SELECT COUNT(*) as count FROM session_history
+         WHERE timestamp >= $1 AND timestamp < $2`,
+        [startOfDay.toISOString(), endOfDay.toISOString()]
+      );
+
+      return result[0]?.count ?? 0;
+    } catch (error) {
+      console.error("[SessionHistoryRepository] Failed to get count:", error);
+      throw error;
+    }
   }
 
   private mapRows(rows: any[]): SessionHistoryEntry[] {
