@@ -175,48 +175,70 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
 
   return (
     <>
-      <div class="card bg-base-200 shadow-xl">
-        <div class="card-body p-4">
-          {/* Date Navigation Header */}
-          <Show when={props.date}>
-            <div class="flex items-center justify-between mb-4">
-              {/* Previous Day Button */}
-              <button
-                onClick={handlePrevDay}
-                class="btn btn-ghost btn-sm"
-                aria-label="Previous day"
-              >
-                <i class="ri-arrow-left-s-line text-lg"></i>
-              </button>
+      <div class="space-y-4">
+        {/* Date Navigation Header */}
+        <Show when={props.date}>
+          <div class="flex items-center justify-center gap-3">
+            {/* Previous Day Button */}
+            <button
+              onClick={handlePrevDay}
+              class="btn btn-circle btn-sm"
+              aria-label="Previous day"
+            >
+              <i class="ri-arrow-left-s-line text-xl"></i>
+            </button>
 
-              {/* Current Date - Clickable */}
-              <button
-                popovertarget="cally-popover"
-                class="btn btn-ghost btn-sm flex items-center gap-2 hover:btn-primary"
-                id="cally-trigger"
-                style="anchor-name:--cally-trigger"
-              >
-                <i class="ri-calendar-event-line"></i>
-                <span class="font-semibold">{formatDateLong(props.date!)}</span>
-              </button>
+            {/* Current Date - Clickable */}
+            <button
+              popovertarget="cally-popover"
+              class="btn btn-ghost gap-2 text-lg font-bold"
+              id="cally-trigger"
+              style="anchor-name:--cally-trigger"
+            >
+              <i class="ri-calendar-event-line"></i>
+              <span>{formatDateLong(props.date!)}</span>
+            </button>
 
-              {/* Next Day Button */}
-              <button
-                onClick={handleNextDay}
-                class="btn btn-ghost btn-sm"
-                aria-label="Next day"
-              >
-                <i class="ri-arrow-right-s-line text-lg"></i>
-              </button>
-            </div>
-          </Show>
+            {/* Next Day Button */}
+            <button
+              onClick={handleNextDay}
+              class="btn btn-circle btn-sm"
+              aria-label="Next day"
+            >
+              <i class="ri-arrow-right-s-line text-xl"></i>
+            </button>
+          </div>
+        </Show>
 
         {/* Loading State */}
         <Show
           when={!props.isLoading}
           fallback={
-            <div class="flex justify-center items-center py-12">
-              <span class="loading loading-spinner loading-lg"></span>
+            <div class="space-y-3">
+              <For each={[1, 2, 3, 4, 5, 6]}>
+                {() => (
+                  <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                      <div class="flex items-center gap-4">
+                        {/* Icon skeleton */}
+                        <div class="skeleton h-10 w-10 shrink-0 rounded-full"></div>
+
+                        {/* Content skeleton */}
+                        <div class="flex-1 space-y-2">
+                          <div class="flex gap-2">
+                            <div class="skeleton h-6 w-24 rounded-full"></div>
+                            <div class="skeleton h-6 w-12 rounded-full"></div>
+                          </div>
+                          <div class="skeleton h-4 w-3/4"></div>
+                        </div>
+
+                        {/* Timestamp skeleton */}
+                        <div class="skeleton h-4 w-20 shrink-0"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </For>
             </div>
           }
         >
@@ -224,63 +246,70 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
           <Show
             when={props.entries.length > 0}
             fallback={
-              <div class="flex flex-col items-center justify-center py-12 text-center">
-                <i class="ri-inbox-line text-5xl text-base-content/20 mb-3"></i>
-                <h3 class="text-lg font-semibold mb-1">No Sessions</h3>
-                <p class="text-base-content/60 text-sm">
-                  No sessions recorded for this day.
-                </p>
+              <div class="card bg-base-100 shadow-sm">
+                <div class="card-body items-center text-center py-16">
+                  <i class="ri-inbox-line text-6xl text-base-content/20 mb-4"></i>
+                  <h3 class="text-xl font-bold mb-2">No Sessions</h3>
+                  <p class="text-base-content/60">
+                    No sessions recorded for this day.
+                  </p>
+                </div>
               </div>
             }
           >
             {/* Session List */}
-            <div class="space-y-2 max-h-96 overflow-y-auto">
+            <div class="space-y-3">
               <For each={props.entries}>
                 {(entry) => (
-                  <div class="bg-base-100 rounded-lg p-3 hover:bg-base-100/70 transition-colors">
-                    <div class="flex items-center gap-3">
-                      {/* Event Icon */}
-                      <div class={`text-2xl ${getEventColor(entry.eventType)}`}>
-                        <i class={getEventIcon(entry.eventType)}></i>
-                      </div>
-
-                      {/* Content */}
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1">
-                          <span class={`badge ${getSessionColor(entry.sessionType)} badge-sm`}>
-                            {getSessionLabel(entry.sessionType)}
-                          </span>
-                          <Show when={entry.sessionNumber}>
-                            <span class="badge badge-ghost badge-sm">
-                              #{entry.sessionNumber}
-                            </span>
-                          </Show>
+                  <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="card-body p-4">
+                      <div class="flex items-center gap-4">
+                        {/* Event Icon */}
+                        <div class={`avatar placeholder shrink-0`}>
+                          <div class={`w-10 h-10 rounded-full ${getEventColor(entry.eventType)} bg-opacity-10 flex items-center justify-center`}>
+                            <i class={`${getEventIcon(entry.eventType)} text-xl ${getEventColor(entry.eventType)}`}></i>
+                          </div>
                         </div>
-                        <div class="text-sm">
-                          <span class="font-semibold">{getEventLabel(entry.eventType)}</span>
-                          {' - '}
-                          <span class="text-base-content/70">
-                            {formatDuration(entry.duration)}
-                            <Show when={entry.duration < entry.expectedDuration}>
-                              <span class="text-warning ml-1">
-                                (of {formatDuration(entry.expectedDuration)})
+
+                        {/* Content */}
+                        <div class="flex-1 min-w-0">
+                          <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class={`badge ${getSessionColor(entry.sessionType)} gap-1`}>
+                              <i class={`${getSessionIcon(entry.sessionType)} text-xs`}></i>
+                              {getSessionLabel(entry.sessionType)}
+                            </span>
+                            <Show when={entry.sessionNumber}>
+                              <span class="badge badge-outline badge-sm">
+                                #{entry.sessionNumber}
                               </span>
                             </Show>
-                          </span>
+                          </div>
+                          <div class="flex flex-wrap items-center gap-x-2 text-sm">
+                            <span class="font-semibold">{getEventLabel(entry.eventType)}</span>
+                            <span class="text-base-content/60">•</span>
+                            <span class="text-base-content/70">
+                              {formatDuration(entry.duration)}
+                              <Show when={entry.duration < entry.expectedDuration}>
+                                <span class="text-warning ml-1">
+                                  / {formatDuration(entry.expectedDuration)}
+                                </span>
+                              </Show>
+                            </span>
+                          </div>
                           {/* Show activity for break sessions */}
                           <Show when={entry.activityType && entry.sessionType !== 'pomodoro'}>
-                            <div class="mt-1 flex items-center gap-1 text-xs opacity-80">
-                              <i class={`${getActivityIcon(entry.activityType!)} text-sm`}></i>
+                            <div class="flex items-center gap-1.5 text-xs opacity-70 mt-1">
+                              <i class={`${getActivityIcon(entry.activityType!)}`}></i>
                               <span>{getActivityLabel(entry.activityType!)}</span>
                             </div>
                           </Show>
                         </div>
-                      </div>
 
-                      {/* Timestamp */}
-                      <div class="text-right text-xs text-base-content/60 flex-shrink-0">
-                        <i class="ri-time-line mr-1"></i>
-                        {formatTimestamp(entry.timestamp)}
+                        {/* Timestamp */}
+                        <div class="text-sm text-base-content/60 shrink-0 flex items-center gap-1">
+                          <i class="ri-time-line"></i>
+                          <span>{formatTimestamp(entry.timestamp)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -290,7 +319,6 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
           </Show>
         </Show>
       </div>
-    </div>
 
       {/* Cally Date Picker Popover */}
       <div popover id="cally-popover" class="dropdown bg-base-100 rounded-box shadow-lg p-4" style="position-anchor:--cally-trigger">

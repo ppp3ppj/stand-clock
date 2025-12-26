@@ -61,8 +61,21 @@ export const SessionHistoryProvider: ParentComponent<SessionHistoryProviderProps
 
   const loadDayEntries = async (date: Date) => {
     setIsLoadingDay(true);
+    const startTime = Date.now();
+    const minLoadingTime = 400; // Minimum 400ms to show skeleton
+
     try {
       const entries = await unitOfWork.sessionHistory.getByDate(date);
+
+      // Calculate remaining time to meet minimum loading duration
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+
+      // Wait for remaining time if needed
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
+
       setSelectedDayEntries(entries);
     } catch (error) {
       console.error("[SessionHistoryContext] Failed to load day entries:", error);
