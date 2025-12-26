@@ -1,6 +1,6 @@
 import { Component, createSignal, Show, For } from 'solid-js';
 import { useTimerSettings } from '../contexts/TimerSettingsContext';
-import { appDataDir } from '@tauri-apps/api/path';
+import { appDataDir, appConfigDir } from '@tauri-apps/api/path';
 
 const DevTools: Component = () => {
   const { settings, updateSettings } = useTimerSettings();
@@ -69,13 +69,26 @@ const DevTools: Component = () => {
 
   const inspectDbLocation = async () => {
     try {
-      const appData = await appDataDir();
-      // Determine platform-specific separator (Windows uses \, Linux/Mac use /)
-      const isWindows = appData.includes('\\');
-      const pathSeparator = isWindows ? '\\' : '/';
+      // Get both config and data directories
+      // Tauri SQL plugin uses different directories on different platforms:
+      // - Linux: appConfigDir
+      // - Windows/macOS: appDataDir
+      const [configDir, dataDir] = await Promise.all([
+        appConfigDir(),
+        appDataDir()
+      ]);
+
+      // Determine which directory to use based on platform
+      // Linux paths typically contain /home/, Windows paths contain \Users\ or C:\
+      const isLinux = configDir.includes('/home/') || configDir.startsWith('/');
+      const baseDir = isLinux ? configDir : dataDir;
+
+      // Determine platform-specific separator
+      const pathSeparator = baseDir.includes('\\') ? '\\' : '/';
       // Check if path already ends with a separator
-      const separator = appData.endsWith('\\') || appData.endsWith('/') ? '' : pathSeparator;
-      const fullPath = `${appData}${separator}standclock.db`;
+      const separator = baseDir.endsWith('\\') || baseDir.endsWith('/') ? '' : pathSeparator;
+      const fullPath = `${baseDir}${separator}standclock.db`;
+
       setDbPath(fullPath);
       setShowDbPath(true);
       showSuccessMessage('Database location loaded');
