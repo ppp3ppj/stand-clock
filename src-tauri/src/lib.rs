@@ -13,29 +13,22 @@ pub fn run() {
         // Define your migrations here
         Migration {
             version: 1,
-            description: "create timer_settings table",
+            description: "create initial database schema",
             sql: "CREATE TABLE IF NOT EXISTS timer_settings (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 work_duration INTEGER NOT NULL DEFAULT 25,
                 short_break_duration INTEGER NOT NULL DEFAULT 5,
                 long_break_duration INTEGER NOT NULL DEFAULT 15,
                 sessions_before_long_break INTEGER NOT NULL DEFAULT 4,
+                sound_enabled INTEGER NOT NULL DEFAULT 1,
+                default_break_activity TEXT DEFAULT 'ask' CHECK (default_break_activity IN ('ask', 'stretch', 'walk', 'exercise', 'hydrate', 'rest', 'other')),
+                show_cycle_preview INTEGER NOT NULL DEFAULT 1,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-            INSERT OR IGNORE INTO timer_settings (id, work_duration, short_break_duration, long_break_duration, sessions_before_long_break)
-            VALUES (1, 25, 5, 15, 4);",
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 2,
-            description: "add sound_enabled to timer_settings",
-            sql: "ALTER TABLE timer_settings ADD COLUMN sound_enabled INTEGER NOT NULL DEFAULT 1;",
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 3,
-            description: "create session_history table",
-            sql: "CREATE TABLE IF NOT EXISTS session_history (
+            INSERT OR IGNORE INTO timer_settings (id, work_duration, short_break_duration, long_break_duration, sessions_before_long_break, sound_enabled, default_break_activity, show_cycle_preview)
+            VALUES (1, 25, 5, 15, 4, 1, 'ask', 1);
+
+            CREATE TABLE IF NOT EXISTS session_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_type TEXT NOT NULL CHECK (session_type IN ('pomodoro', 'shortBreak', 'longBreak')),
                 event_type TEXT NOT NULL CHECK (event_type IN ('completed', 'skipped', 'manual_switch')),
@@ -48,18 +41,6 @@ pub fn run() {
             );
             CREATE INDEX idx_session_history_timestamp ON session_history(timestamp DESC);
             CREATE INDEX idx_session_history_type ON session_history(session_type, event_type);",
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 4,
-            description: "add default_break_activity to timer_settings",
-            sql: "ALTER TABLE timer_settings ADD COLUMN default_break_activity TEXT DEFAULT 'ask' CHECK (default_break_activity IN ('ask', 'stretch', 'walk', 'exercise', 'hydrate', 'rest', 'other'));",
-            kind: MigrationKind::Up,
-        },
-        Migration {
-            version: 5,
-            description: "add show_cycle_preview to timer_settings",
-            sql: "ALTER TABLE timer_settings ADD COLUMN show_cycle_preview INTEGER NOT NULL DEFAULT 1;",
             kind: MigrationKind::Up,
         }
     ];
