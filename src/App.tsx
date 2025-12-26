@@ -27,7 +27,7 @@ const Layout: ParentComponent = (props) => {
           <div class="lg:tooltip lg:tooltip-right" data-tip="Timer">
             <A
               href="/"
-              class="btn btn-ghost btn-square"
+              class="btn btn-square"
               activeClass="btn-primary"
               inactiveClass="btn-ghost"
               end
@@ -40,7 +40,7 @@ const Layout: ParentComponent = (props) => {
           <div class="lg:tooltip lg:tooltip-right" data-tip="History">
             <A
               href="/history"
-              class="btn btn-ghost btn-square"
+              class="btn btn-square"
               activeClass="btn-primary"
               inactiveClass="btn-ghost"
               title="History"
@@ -52,7 +52,7 @@ const Layout: ParentComponent = (props) => {
           <div class="lg:tooltip lg:tooltip-right" data-tip="Timer Settings">
             <A
               href="/timer-settings"
-              class="btn btn-ghost btn-square"
+              class="btn btn-square"
               activeClass="btn-primary"
               inactiveClass="btn-ghost"
               title="Timer Settings"
@@ -64,7 +64,7 @@ const Layout: ParentComponent = (props) => {
           <div class="lg:tooltip lg:tooltip-right" data-tip="Settings">
           <A
             href="/settings"
-            class="btn btn-ghost btn-square"
+            class="btn btn-square"
             activeClass="btn-primary"
             inactiveClass="btn-ghost"
             title="Settings"

@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, Show } from "solid-js";
+import { createSignal, onCleanup, createEffect, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import { useSessionHistory } from "../contexts/SessionHistoryContext";
 import { ActivityType } from "../repositories/SessionHistoryRepository";
@@ -10,7 +10,7 @@ import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
 function HomePage() {
-  const { settings } = useTimerSettings();
+  const { settings, isLoading } = useTimerSettings();
   const { addEntry } = useSessionHistory();
 
   // Timer state
@@ -60,8 +60,13 @@ function HomePage() {
     setIsRunning(false);
   };
 
-  // Initialize on mount
-  initializeTimer(mode());
+  // Initialize timer when settings finish loading
+  createEffect(() => {
+    if (!isLoading()) {
+      console.log('[HomePage] Settings loaded, initializing timer with:', settings());
+      initializeTimer(mode());
+    }
+  });
 
   // Helper function to get duration for a mode
   const getDurationForMode = (m: TimerMode): number => {
