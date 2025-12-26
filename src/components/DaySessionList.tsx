@@ -175,10 +175,10 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
 
   return (
     <>
-      <div class="space-y-4">
-        {/* Date Navigation Header */}
-        <Show when={props.date}>
-          <div class="flex items-center justify-center gap-3">
+      {/* Sticky Date Navigation Header */}
+      <Show when={props.date}>
+        <div class="sticky top-0 z-10 bg-base-200 py-4 mb-6 -mx-6 sm:-mx-8 px-6 sm:px-8 shadow-sm">
+          <div class="max-w-3xl mx-auto flex items-center justify-center gap-3">
             {/* Previous Day Button */}
             <button
               onClick={handlePrevDay}
@@ -208,7 +208,10 @@ const DaySessionList: Component<DaySessionListProps> = (props) => {
               <i class="ri-arrow-right-s-line text-xl"></i>
             </button>
           </div>
-        </Show>
+        </div>
+      </Show>
+
+      <div class="space-y-3">
 
         {/* Loading State */}
         <Show

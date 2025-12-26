@@ -24,32 +24,38 @@ const HistoryPage: Component = () => {
   };
 
   return (
-    <div class="container mx-auto p-4 max-w-4xl">
-      {/* Header */}
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-3xl font-bold mb-1">Session History</h1>
-          <p class="text-base-content/70">Track your productivity over time</p>
+    <div class="min-h-full">
+      {/* Header - Static */}
+      <div class="bg-base-200 px-6 sm:px-8 py-6 shadow-sm">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl sm:text-4xl font-bold mb-2">Session History</h1>
+            <p class="text-base-content/60">Track your productivity over time</p>
+          </div>
+          <button
+            class="btn btn-outline btn-error btn-sm"
+            onClick={handleClearAll}
+          >
+            <i class="ri-delete-bin-line"></i>
+            <span class="hidden sm:inline">Clear All</span>
+          </button>
         </div>
-        <button
-          class="btn btn-outline btn-error btn-sm"
-          onClick={handleClearAll}
-        >
-          <i class="ri-delete-bin-line"></i>
-          Clear All
-        </button>
       </div>
 
-      {/* Day Sessions */}
-      <DaySessionList
-        date={selectedDate()}
-        entries={selectedDayEntries()}
-        isLoading={isLoadingDay()}
-        onDateSelect={(date) => {
-          setSelectedDate(date);
-          setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-        }}
-      />
+      {/* Content Area */}
+      <div class="px-6 sm:px-8 py-6">
+        <div class="max-w-3xl mx-auto">
+          <DaySessionList
+            date={selectedDate()}
+            entries={selectedDayEntries()}
+            isLoading={isLoadingDay()}
+            onDateSelect={(date) => {
+              setSelectedDate(date);
+              setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
