@@ -26,6 +26,8 @@ function HomePage() {
   const [modeChangeKey, setModeChangeKey] = createSignal(0); // Trigger animation on mode change
 
   let intervalId: number | null = null;
+  let processingLock = false; // Synchronous lock to prevent double-click
+  let debounceTimer: number | null = null;
 
   // Play click sound for button actions
   const playClickSound = () => {
@@ -89,6 +91,15 @@ function HomePage() {
 
   // Start/Pause timer
   const toggleTimer = () => {
+    // Prevent double-click with synchronous lock and debounce
+    if (processingLock) return;
+
+    // Clear any existing debounce timer
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
+    }
+
+    processingLock = true;
     playClickSound(); // Play click sound on every toggle
 
     if (isRunning()) {
@@ -191,6 +202,12 @@ function HomePage() {
         });
       }, 1000);
     }
+
+    // Reset processing lock with debounce
+    debounceTimer = window.setTimeout(() => {
+      processingLock = false;
+      debounceTimer = null;
+    }, 300);
   };
 
   // Reset timer
@@ -402,7 +419,7 @@ function HomePage() {
         {/* Control Buttons */}
         <div class="flex justify-center gap-3 mb-6">
           <button
-            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-lg font-semibold uppercase transition-all duration-300`}
+            class={`btn ${isRunning() ? "btn-warning" : "btn-primary"} btn-lg px-12 text-xl font-semibold uppercase min-w-[220px]`}
             onClick={toggleTimer}
           >
             {isRunning() ? "PAUSE" : "START"}
