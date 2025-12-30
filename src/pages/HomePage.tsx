@@ -1,8 +1,11 @@
 import { createSignal, onCleanup, createEffect, Show } from "solid-js";
 import { useTimerSettings } from "../contexts/TimerSettingsContext";
 import { useSessionHistory } from "../contexts/SessionHistoryContext";
+import { useEyeCare } from "../contexts/EyeCareContext";
 import { ActivityType } from "../repositories/SessionHistoryRepository";
 import ActivitySelectionDialog from "../components/ActivitySelectionDialog";
+import EyeCareOverlay from "../components/EyeCareOverlay";
+import EyeCareIndicator from "../components/EyeCareIndicator";
 import clickSound from "../assets/sounds/click1.ogg";
 import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
 import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
@@ -12,6 +15,7 @@ type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 function HomePage() {
   const { settings, isLoading } = useTimerSettings();
   const { addEntry } = useSessionHistory();
+  const eyeCare = useEyeCare();
 
   // Timer state
   const [mode, setMode] = createSignal<TimerMode>("pomodoro");
@@ -71,6 +75,11 @@ function HomePage() {
     }
   });
 
+  // Notify EyeCare context when mode changes
+  createEffect(() => {
+    eyeCare.onPomodoroModeChange(mode());
+  });
+
   // Helper function to get duration for a mode
   const getDurationForMode = (m: TimerMode): number => {
     const durations = {
@@ -114,10 +123,16 @@ function HomePage() {
       }
       setIsRunning(false);
       setStartTime(null);
+
+      // Notify EyeCare context
+      eyeCare.onPomodoroPause();
     } else {
       // Start/Resume - record when timer started
       setStartTime(Date.now());
       setIsRunning(true);
+
+      // Notify EyeCare context
+      eyeCare.onPomodoroStart();
       intervalId = window.setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -369,6 +384,14 @@ function HomePage() {
         onSkip={handleActivitySkip}
       />
 
+      {/* Eye Care Overlay */}
+      <EyeCareOverlay
+        isOpen={eyeCare.isBreakActive()}
+        countdown={eyeCare.breakTimeLeft()}
+        onDismiss={eyeCare.dismissBreak}
+        onSnooze={eyeCare.snooze}
+      />
+
       <div class="h-full flex flex-col items-center justify-center px-6 py-8">
         {/* Mode Selection Tabs */}
         <div class="flex gap-2 mb-8">
@@ -479,6 +502,15 @@ function HomePage() {
           </Show>
         </div>
       </div>
+
+      {/* Eye Care Indicator */}
+      <EyeCareIndicator
+        isEnabled={settings().eyeCareEnabled}
+        isActive={isRunning() && mode() === 'pomodoro'}
+        timeUntilBreak={eyeCare.timeUntilBreak()}
+        isSnoozed={eyeCare.isSnoozed()}
+        snoozeTimeLeft={eyeCare.snoozeTimeLeft()}
+      />
     </>
   );
 }

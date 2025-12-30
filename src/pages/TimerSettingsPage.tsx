@@ -14,6 +14,10 @@ const TimerSettingsPage: Component = () => {
   const [soundEnabled, setSoundEnabled] = createSignal(settings().soundEnabled);
   const [defaultBreakActivity, setDefaultBreakActivity] = createSignal(settings().defaultBreakActivity);
   const [showCyclePreview, setShowCyclePreview] = createSignal(settings().showCyclePreview);
+  const [eyeCareEnabled, setEyeCareEnabled] = createSignal(settings().eyeCareEnabled);
+  const [eyeCareInterval, setEyeCareInterval] = createSignal(settings().eyeCareInterval);
+  const [eyeCareDuration, setEyeCareDuration] = createSignal(settings().eyeCareDuration);
+  const [eyeCareSoundEnabled, setEyeCareSoundEnabled] = createSignal(settings().eyeCareSoundEnabled);
   const [isSaving, setIsSaving] = createSignal(false);
 
   // Watch for settings changes
@@ -25,7 +29,11 @@ const TimerSettingsPage: Component = () => {
       sessionsBeforeLongBreak() !== settings().sessionsBeforeLongBreak ||
       soundEnabled() !== settings().soundEnabled ||
       defaultBreakActivity() !== settings().defaultBreakActivity ||
-      showCyclePreview() !== settings().showCyclePreview
+      showCyclePreview() !== settings().showCyclePreview ||
+      eyeCareEnabled() !== settings().eyeCareEnabled ||
+      eyeCareInterval() !== settings().eyeCareInterval ||
+      eyeCareDuration() !== settings().eyeCareDuration ||
+      eyeCareSoundEnabled() !== settings().eyeCareSoundEnabled
     );
   };
 
@@ -39,6 +47,10 @@ const TimerSettingsPage: Component = () => {
       soundEnabled: soundEnabled(),
       defaultBreakActivity: defaultBreakActivity(),
       showCyclePreview: showCyclePreview(),
+      eyeCareEnabled: eyeCareEnabled(),
+      eyeCareInterval: eyeCareInterval(),
+      eyeCareDuration: eyeCareDuration(),
+      eyeCareSoundEnabled: eyeCareSoundEnabled(),
     });
     setIsSaving(false);
   };
@@ -53,6 +65,10 @@ const TimerSettingsPage: Component = () => {
       setSoundEnabled(settings().soundEnabled);
       setDefaultBreakActivity(settings().defaultBreakActivity);
       setShowCyclePreview(settings().showCyclePreview);
+      setEyeCareEnabled(settings().eyeCareEnabled);
+      setEyeCareInterval(settings().eyeCareInterval);
+      setEyeCareDuration(settings().eyeCareDuration);
+      setEyeCareSoundEnabled(settings().eyeCareSoundEnabled);
     }
   };
 
@@ -317,6 +333,112 @@ const TimerSettingsPage: Component = () => {
                     </select>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* 20-20-20 Eye Care Rule */}
+            <div class="card bg-base-100 shadow-md">
+              <div class="card-body p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-3">
+                    <i class="ri-eye-line text-2xl text-info"></i>
+                    <div>
+                      <h2 class="card-title text-xl">20-20-20 Eye Care Rule</h2>
+                      <p class="text-sm opacity-60">
+                        Reduce eye strain with regular breaks
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-info toggle-lg"
+                    checked={eyeCareEnabled()}
+                    onChange={(e) => setEyeCareEnabled(e.currentTarget.checked)}
+                  />
+                </div>
+
+                <Show when={eyeCareEnabled()}>
+                  <div class="space-y-4 mt-4 pt-4 border-t border-base-300">
+                    {/* Work Interval Setting */}
+                    <div class="form-control">
+                      <label class="label">
+                        <span class="label-text font-semibold">
+                          Work Interval (minutes)
+                        </span>
+                        <span class="label-text-alt badge badge-info">
+                          {eyeCareInterval()} min
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="60"
+                        step="5"
+                        value={eyeCareInterval()}
+                        class="range range-info range-sm"
+                        onInput={(e) => setEyeCareInterval(parseInt(e.currentTarget.value))}
+                      />
+                      <div class="flex justify-between text-xs mt-1 px-1 opacity-60">
+                        <span>10</span>
+                        <span>60</span>
+                      </div>
+                    </div>
+
+                    {/* Break Duration Setting */}
+                    <div class="form-control">
+                      <label class="label">
+                        <span class="label-text font-semibold">
+                          Break Duration (seconds)
+                        </span>
+                        <span class="label-text-alt badge badge-info">
+                          {eyeCareDuration()} sec
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="60"
+                        step="5"
+                        value={eyeCareDuration()}
+                        class="range range-info range-sm"
+                        onInput={(e) => setEyeCareDuration(parseInt(e.currentTarget.value))}
+                      />
+                      <div class="flex justify-between text-xs mt-1 px-1 opacity-60">
+                        <span>10</span>
+                        <span>60</span>
+                      </div>
+                    </div>
+
+                    {/* Sound Toggle */}
+                    <div class="form-control">
+                      <label class="label cursor-pointer justify-start gap-3">
+                        <input
+                          type="checkbox"
+                          class="toggle toggle-info toggle-sm"
+                          checked={eyeCareSoundEnabled()}
+                          onChange={(e) => setEyeCareSoundEnabled(e.currentTarget.checked)}
+                        />
+                        <span class="label-text font-semibold">
+                          Sound for Eye Breaks
+                        </span>
+                      </label>
+                    </div>
+
+                    {/* Info Box */}
+                    <div class="alert alert-info">
+                      <i class="ri-information-line"></i>
+                      <div class="text-sm">
+                        <p class="font-semibold">How it works:</p>
+                        <ul class="list-disc list-inside mt-1 opacity-80">
+                          <li>Timer counts only during work sessions</li>
+                          <li>Pauses automatically during Pomodoro breaks</li>
+                          <li>Full-screen reminder appears when time is up</li>
+                          <li>Snooze option available (5-minute delay, max 3 times)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </Show>
               </div>
             </div>
 

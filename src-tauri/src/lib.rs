@@ -42,6 +42,15 @@ pub fn run() {
             CREATE INDEX idx_session_history_timestamp ON session_history(timestamp DESC);
             CREATE INDEX idx_session_history_type ON session_history(session_type, event_type);",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "add eye care settings",
+            sql: "ALTER TABLE timer_settings ADD COLUMN eye_care_enabled INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE timer_settings ADD COLUMN eye_care_interval INTEGER NOT NULL DEFAULT 20;
+            ALTER TABLE timer_settings ADD COLUMN eye_care_duration INTEGER NOT NULL DEFAULT 20;
+            ALTER TABLE timer_settings ADD COLUMN eye_care_sound_enabled INTEGER NOT NULL DEFAULT 1;",
+            kind: MigrationKind::Up,
         }
     ];
     tauri::Builder::default()

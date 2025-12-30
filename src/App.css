@@ -81,3 +81,31 @@
 .animate-timerPulse {
   animation: timerPulse 0.4s ease-in-out;
 }
+
+@keyframes eyeBreakSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-eyeBreakSlideIn {
+  animation: eyeBreakSlideIn 0.5s ease-out;
+}
+
+@keyframes countdownPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-countdownPulse {
+  animation: countdownPulse 1s ease-in-out infinite;
+}

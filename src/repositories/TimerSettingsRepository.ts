@@ -9,6 +9,10 @@ export interface TimerSettings {
   soundEnabled: boolean;
   defaultBreakActivity: ActivityType | 'ask'; // 'ask' means show popup
   showCyclePreview: boolean;
+  eyeCareEnabled: boolean;
+  eyeCareInterval: number;      // minutes (10-60)
+  eyeCareDuration: number;      // seconds (10-60)
+  eyeCareSoundEnabled: boolean;
 }
 
 export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
@@ -19,6 +23,10 @@ export const DEFAULT_TIMER_SETTINGS: TimerSettings = {
   soundEnabled: true,
   defaultBreakActivity: 'ask',
   showCyclePreview: true,
+  eyeCareEnabled: false,
+  eyeCareInterval: 20,
+  eyeCareDuration: 20,
+  eyeCareSoundEnabled: true,
 };
 
 /**
@@ -59,6 +67,10 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
         sound_enabled?: number;
         default_break_activity?: string;
         show_cycle_preview?: number;
+        eye_care_enabled?: number;
+        eye_care_interval?: number;
+        eye_care_duration?: number;
+        eye_care_sound_enabled?: number;
       }>>("SELECT * FROM timer_settings WHERE id = 1");
 
       if (result.length > 0) {
@@ -71,6 +83,10 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           soundEnabled: row.sound_enabled !== undefined ? Boolean(row.sound_enabled) : true,
           defaultBreakActivity: (row.default_break_activity as ActivityType | 'ask') || 'ask',
           showCyclePreview: row.show_cycle_preview !== undefined ? Boolean(row.show_cycle_preview) : true,
+          eyeCareEnabled: row.eye_care_enabled !== undefined ? Boolean(row.eye_care_enabled) : false,
+          eyeCareInterval: row.eye_care_interval ?? 20,
+          eyeCareDuration: row.eye_care_duration ?? 20,
+          eyeCareSoundEnabled: row.eye_care_sound_enabled !== undefined ? Boolean(row.eye_care_sound_enabled) : true,
         };
       }
 
@@ -93,6 +109,10 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
              sound_enabled = $5,
              default_break_activity = $6,
              show_cycle_preview = $7,
+             eye_care_enabled = $8,
+             eye_care_interval = $9,
+             eye_care_duration = $10,
+             eye_care_sound_enabled = $11,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = 1`,
         [
@@ -103,6 +123,10 @@ export class SqliteTimerSettingsRepository implements ITimerSettingsRepository {
           settings.soundEnabled ? 1 : 0,
           settings.defaultBreakActivity,
           settings.showCyclePreview ? 1 : 0,
+          settings.eyeCareEnabled ? 1 : 0,
+          settings.eyeCareInterval,
+          settings.eyeCareDuration,
+          settings.eyeCareSoundEnabled ? 1 : 0,
         ]
       );
       console.log("[SqliteTimerSettingsRepository] Settings saved successfully");
