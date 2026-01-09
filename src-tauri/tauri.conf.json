@@ -39,6 +39,9 @@
   "plugins": {
     "sql": {
       "preload": ["sqlite:standclock.db"]
+    },
+    "singleInstance": {
+      "enabled": true
     }
   }
 }
