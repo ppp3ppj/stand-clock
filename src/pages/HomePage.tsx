@@ -6,6 +6,7 @@ import ActivitySelectionDialog from "../components/ActivitySelectionDialog";
 import clickSound from "../assets/sounds/click1.ogg";
 import notificationSound from "../assets/sounds/mixkit-notification-bell-592.wav";
 import popAlertSound from "../assets/sounds/mixkit-message-pop-alert-2354.mp3";
+import { invoke } from "@tauri-apps/api/core";
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak";
 
@@ -158,6 +159,9 @@ function HomePage() {
                   ? "longBreak"
                   : "shortBreak";
 
+                // Show window when break time starts
+                invoke('show_window').catch(err => console.error('Failed to show window:', err));
+
                 // Show activity selection dialog for breaks (or auto-set if default configured)
                 setCurrentBreakType(nextMode);
                 const defaultActivity = settings().defaultBreakActivity;
@@ -185,6 +189,9 @@ function HomePage() {
                   expectedDuration: getDurationForMode(mode()),
                   activityType: selectedActivity() ?? undefined,
                 }).catch(err => console.error("Failed to track break completion:", err));
+
+                // Show window when break ends and work resumes
+                invoke('show_window').catch(err => console.error('Failed to show window:', err));
 
                 // Reset elapsed time tracker
                 setElapsedSeconds(0);
