@@ -1,10 +1,39 @@
-# Tauri + Solid + Typescript
+# StandClock
 
-This template should help get you started developing with Tauri, Solid and Typescript in Vite.
+A modern Pomodoro timer desktop application with system tray support, designed to help you maintain focus and take regular breaks.
 
-## Recommended IDE Setup
+## Features
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- Customizable work and break durations
+- Short and long break cycles
+- Activity tracking for breaks (stretch, walk, exercise, hydrate, etc.)
+- Session history tracking
+- System tray integration - minimize to tray and continue running in background
+- Single instance - only one app window can run at a time
+- Auto-popup notifications when break time starts or ends
+- Sound notifications for timer completion
+- Cross-platform support (Windows, Linux)
+
+## Tech Stack
+
+### Frontend
+- **[Solid.js](https://www.solidjs.com/)** - Reactive UI framework
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
+- **[Vite](https://vite.dev/)** - Fast build tool and dev server
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[DaisyUI](https://daisyui.com/)** - Tailwind CSS component library
+- **[@solidjs/router](https://github.com/solidjs/solid-router)** - Client-side routing
+
+### Backend
+- **[Tauri 2.0](https://tauri.app/)** - Rust-based desktop app framework
+- **[Rust](https://www.rust-lang.org/)** - Systems programming language
+- **[SQLite](https://www.sqlite.org/)** - Embedded database for session history
+
+### Tauri Plugins
+- `tauri-plugin-sql` - Database integration
+- `tauri-plugin-single-instance` - Prevent multiple app instances
+- `tauri-plugin-shell` - Shell command execution
+- `tauri-plugin-opener` - File/URL opening
 
 ## Development
 
