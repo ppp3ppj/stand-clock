@@ -8,7 +8,10 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:dev": "bun tauri dev",
+    "tauri:build": "bun tauri build",
+    "build:windows": "bun tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "license": "MIT",
   "dependencies": {
