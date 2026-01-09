@@ -10,14 +10,9 @@ const SettingsPage: Component = () => {
   createEffect(() => {
     const loadAppInfo = async () => {
       try {
-        const name = await getName();
+        const productName = await getName();
         const version = await getVersion();
-        // Convert "stand-clock" to "Stand Clock"
-        const displayName = name
-          .split('-')
-          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(' ');
-        setAppInfo(`${displayName} v${version}`);
+        setAppInfo(`${productName} v${version}`);
       } catch (err) {
         console.warn('Failed to load app info:', err);
         setAppInfo('Stand Clock v0.1.0');
