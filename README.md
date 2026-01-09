@@ -105,6 +105,24 @@ bun run build:windows
   - Source: https://mixkit.co/free-sound-effects/notification/
 
 ## Resources
-- [Tauri Documentation](https://tauri.app/)
-- [Solid.js Documentation](https://www.solidjs.com/)
-- [DaisyUI Components](https://daisyui.com/)
+
+### Documentation
+- [Tauri Documentation](https://tauri.app/) - Desktop app framework
+- [Tauri v2 Migration Guide](https://v2.tauri.app/start/) - Guide for Tauri 2.0
+- [Solid.js Documentation](https://www.solidjs.com/) - Reactive UI framework
+- [DaisyUI Components](https://daisyui.com/) - Component library
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs) - CSS framework
+
+### Pomodoro Technique
+- [Pomodoro Technique](https://en.wikipedia.org/wiki/Pomodoro_Technique) - Wikipedia overview
+- [The Pomodoro Technique](https://francescocirillo.com/products/the-pomodoro-technique) - Official website
+- [Why the Pomodoro Technique Works](https://todoist.com/productivity-methods/pomodoro-technique) - Productivity guide
+
+### Tauri Plugins
+- [tauri-plugin-sql](https://github.com/tauri-apps/tauri-plugin-sql) - Database integration
+- [tauri-plugin-single-instance](https://github.com/tauri-apps/tauri-plugin-single-instance) - Single instance management
+- [System Tray API](https://v2.tauri.app/reference/javascript/api/namespacetray/) - Tray icon documentation
+
+### Cross-Platform Build Tools
+- [cargo-xwin](https://github.com/rust-cross/cargo-xwin) - Cross-compile Rust to Windows from Linux
+- [Tauri Build Guides](https://v2.tauri.app/distribute/) - Distribution and building
