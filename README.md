@@ -57,7 +57,7 @@ bun run tauri:dev
 bun run tauri:build
 ```
 
-**Windows (from Linux using cargo-xwin):**
+**Windows:**
 ```bash
 bun run build:windows
 ```
