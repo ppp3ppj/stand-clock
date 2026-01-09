@@ -1,9 +1,26 @@
-import { Component, createSignal } from 'solid-js';
+import { Component, createSignal, createEffect } from 'solid-js';
+import { getVersion, getName } from '@tauri-apps/api/app';
 import ThemeSelector from '../components/ThemeSelector';
 import DevTools from '../components/DevTools';
 
 const SettingsPage: Component = () => {
   const [showDevTools, setShowDevTools] = createSignal(false);
+  const [appInfo, setAppInfo] = createSignal<string>('Stand Clock v?.?.?');
+
+  createEffect(() => {
+    const loadAppInfo = async () => {
+      try {
+        const productName = await getName();
+        const version = await getVersion();
+        setAppInfo(`${productName} v${version}`);
+      } catch (err) {
+        console.warn('Failed to load app info:', err);
+        setAppInfo('Stand Clock v0.1.0');
+      }
+    };
+
+    loadAppInfo();
+  });
 
   return (
     <div class="h-full flex flex-col">
@@ -60,6 +77,16 @@ const SettingsPage: Component = () => {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Footer - Version Display */}
+      <div class="flex-none border-t border-base-300 bg-base-200 px-6 sm:px-8 py-3">
+        <div class="max-w-4xl mx-auto text-center">
+          <div class="flex items-center justify-center gap-2 text-xs text-base-content/60">
+            <i class="ri-information-line"></i>
+            <span>{appInfo()}</span>
+          </div>
         </div>
       </div>
     </div>
